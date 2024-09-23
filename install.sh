@@ -1,5 +1,22 @@
 #!/bin/bash
 
+#bash <(curl -s https://raw.githubusercontent.com/Stary/frame/refs/heads/main/install.sh)
+
+if [ "$EUID" -eq 0 ]
+  then echo "Please do not run the script as root"
+  exit
+fi
+
+USER=`whoami`
+
+
+SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | wc -l`
+
+if [ "$SUDO_READY" -eq 0 ]
+then
+  echo '$USER ALL=(ALL) NOPASSWD: ALL' | sudo EDITOR='tee -a' visudo
+fi
+
 sudo ln -f -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 
 sudo apt-get -y update
@@ -39,4 +56,6 @@ sudo systemctl mask update-notifier-download.service
 sudo systemctl daemon-reload
 sudo systemctl reset-failed
 sudo systemctl list-timers --all
+
+(crontab -l 2>/dev/null| grep -v frame_watchdog; echo "* * * * * /home/orangepi/frame_watchdog.sh 2>&1 >> /home/orangepi/frame_watchdog.log") | crontab -
 

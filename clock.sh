@@ -2,6 +2,7 @@
 
 export DISPLAY=:0
 
+killall feh
 killall conky
 
 conky
