@@ -26,7 +26,7 @@ SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | 
 
 if [ "$SUDO_READY" -eq 0 ]
 then
-  echo '$USER ALL=(ALL) NOPASSWD: ALL' | sudo EDITOR='tee -a' visudo
+  echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo EDITOR='tee -a' visudo
 fi
 
 for d in $MEDIA_DIR $CONF_DIR $BIN_DIR $LOG_DIR
@@ -61,7 +61,7 @@ sudo systemctl start cron
 
 
 sudo systemctl stop unattended-upgrades
-sudo apt-get purge unattended-upgrades
+sudo apt-get -y purge unattended-upgrades
 sudo chmod -x /etc/update-motd.d/40-orangepi-updates
 sudo sed -i 's/Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades
 
@@ -82,6 +82,11 @@ sudo systemctl mask update-notifier-download.service
 sudo systemctl daemon-reload
 sudo systemctl reset-failed
 sudo systemctl list-timers --all
+
+sudo sed -i 's/^DPkg/#DPkg/' /etc/apt/apt.conf.d/99update-notifier
+sudo sed -i 's/^APT/#APT/' /etc/apt/apt.conf.d/99update-notifier
+
+sudo sed -i 's/Unattended-Upgrade "7"/Unattended-Upgrade "0"/' /etc/apt/apt.conf.d/02-orangepi-periodic
 
 (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 
