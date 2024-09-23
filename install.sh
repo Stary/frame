@@ -8,7 +8,24 @@ if [ "$EUID" -eq 0 ]
 fi
 
 USER=`whoami`
+HOME_DIR=`eval echo ~$USER`
+MEDIA_DIR="$HOME_DIR/frame"
+CONF_DIR="$HOME_DIR/.config/conky"
+BIN_DIR="$HOME_DIR"
+LOG_DIR="/var/log/frame"
 
+CONF="conky.conf"
+FONT=""
+MAIN_SCRIPT="frame_watchdog.sh"
+MOUNT_SCRIPT="mount_usb.sh"
+LOG_FILE="$LOG_DIR/frame.log"
+
+for d in $MEDIA_DIR $CONF_DIR $BIN_DIR $LOG_DIR
+do
+  echo $d
+  sudo mkdir -p $d
+  sudo chown -R $USER $d
+done
 
 SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | wc -l`
 
@@ -57,5 +74,5 @@ sudo systemctl daemon-reload
 sudo systemctl reset-failed
 sudo systemctl list-timers --all
 
-(crontab -l 2>/dev/null| grep -v frame_watchdog; echo "* * * * * /home/orangepi/frame_watchdog.sh 2>&1 >> /home/orangepi/frame_watchdog.log") | crontab -
+(crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT 2>&1 >> $LOG_DIR/$LOG_FILE") | crontab -
 
