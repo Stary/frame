@@ -1,12 +1,5 @@
 #!/bin/bash
 
-#apt-get install feh conky unclutter wmctrl exiftran exif exifprobe
-#systemctl enable chrony
-#systemctl start chrony
-#systemctl enable cron
-#systemctl start cron
-
-
 DAY=800
 NIGHT=2400
 
@@ -18,7 +11,53 @@ export XAUTHORITY=/home/orangepi/.Xauthority
 
 #exiftran -ai $IMAGES_DIR/*
 
-sudo ~/mount_usb.sh
+
+###################### Mount USB ####################
+
+sudo mkdir -p $USB_DIR
+
+test_file='asDF4)SF4mADf.dat'
+
+sudo touch $USB_DIR/$test_file || sudo umount $USB_DIR
+sudo rm -f $USB_DIR/$test_file
+
+for name in `find /dev -name 'sd*1'`
+do
+  n=`mount | grep $name | wc -l`
+  if [ $n -eq 0 ]
+  then
+    echo "Found external partition $name"
+    sudo mount $name $USB_DIR || exit -1
+    for f in `find  $USB_DIR -name '*.txt' -size -256 | grep -i wifi`
+    do
+      echo $f
+      wifi_ssid=""
+      wifi_password=""
+      for line in `head -10 $f`
+      do
+        if [ $line != '' ]; then
+          echo $line
+          if [ "$wifi_ssid" == '' ]; then
+            wifi_ssid=$line
+            wifi_nm_file="/etc/NetworkManager/system-connections/$wifi_ssid.nmconnection"
+          else
+            if [ "$wifi_password" == '' ]; then
+              wifi_password=$line
+              echo "WiFi: $wifi_ssid/$wifi_password"
+              sudo nmcli device wifi connect "$wifi_ssid" password "$wifi_password" ifname wlan0
+              echo "Created Network Manager config at $wifi_nm_file"
+            fi
+          fi
+        fi
+      done
+    done
+    pkill feh
+#  else
+#    echo "Partition $name is already mounted"
+  fi
+done
+
+#####################################################
 
 
 shopt -s extglob

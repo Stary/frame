@@ -20,7 +20,6 @@ LOG_DIR="/var/log/frame"
 CONF="conky.conf"
 FONT="UbuntuThin.ttf"
 MAIN_SCRIPT="frame_watchdog.sh"
-MOUNT_SCRIPT="mount_usb.sh"
 LOG_FILE="frame.log"
 
 SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | wc -l`
@@ -40,7 +39,6 @@ done
 if [ $SRC_DIR != $BIN_DIR ];
 then
   rsync -av $SRC_DIR/$MAIN_SCRIPT $BIN_DIR
-  rsync -av $SRC_DIR/$MOUNT_SCRIPT $BIN_DIR
 fi
 rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR
