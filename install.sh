@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -v
+
 #bash <(curl -s https://raw.githubusercontent.com/Stary/frame/refs/heads/main/install.sh)
 
 if [ "$EUID" -eq 0 ]
@@ -8,17 +10,25 @@ if [ "$EUID" -eq 0 ]
 fi
 
 USER=`whoami`
+SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
 HOME_DIR=`eval echo ~$USER`
 MEDIA_DIR="$HOME_DIR/frame"
 CONF_DIR="$HOME_DIR/.config/conky"
-BIN_DIR="$HOME_DIR"
+BIN_DIR="$HOME_DIR/bin"
 LOG_DIR="/var/log/frame"
 
 CONF="conky.conf"
-FONT=""
+FONT="UbuntuThin.ttf"
 MAIN_SCRIPT="frame_watchdog.sh"
 MOUNT_SCRIPT="mount_usb.sh"
-LOG_FILE="$LOG_DIR/frame.log"
+LOG_FILE="frame.log"
+
+SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | wc -l`
+
+if [ "$SUDO_READY" -eq 0 ]
+then
+  echo '$USER ALL=(ALL) NOPASSWD: ALL' | sudo EDITOR='tee -a' visudo
+fi
 
 for d in $MEDIA_DIR $CONF_DIR $BIN_DIR $LOG_DIR
 do
@@ -27,12 +37,13 @@ do
   sudo chown -R $USER $d
 done
 
-SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | wc -l`
-
-if [ "$SUDO_READY" -eq 0 ]
+if [ $SRC_DIR != $BIN_DIR ];
 then
-  echo '$USER ALL=(ALL) NOPASSWD: ALL' | sudo EDITOR='tee -a' visudo
+  rsync -av $SRC_DIR/$MAIN_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$MOUNT_SCRIPT $BIN_DIR
 fi
+rsync -av $SRC_DIR/$CONF $CONF_DIR
+rsync -av $SRC_DIR/$FONT $CONF_DIR
 
 sudo ln -f -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 
@@ -74,5 +85,5 @@ sudo systemctl daemon-reload
 sudo systemctl reset-failed
 sudo systemctl list-timers --all
 
-(crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT 2>&1 >> $LOG_DIR/$LOG_FILE") | crontab -
+(crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 
