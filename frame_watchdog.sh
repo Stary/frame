@@ -4,6 +4,12 @@ DAY=800
 NIGHT=2400
 
 IMAGES_DIR=/home/orangepi/frame
+
+if [ -d ~/photo ]
+then
+  IMAGES_DIR=~/photo
+fi
+
 USB_DIR=/media/usb
 
 export DISPLAY=:0.0
@@ -27,30 +33,31 @@ do
   if [ $n -eq 0 ]
   then
     echo "Found external partition $name"
-    sudo mount $name $USB_DIR || exit -1
-    for f in `find  $USB_DIR -name '*.txt' -size -256 | grep -i wifi`
-    do
-      echo $f
-      wifi_ssid=""
-      wifi_password=""
-      for line in `head -10 $f`
+    if sudo mount $name $USB_DIR; then
+      for f in `find  $USB_DIR -name '*.txt' -size -256 | grep -i wifi`
       do
-        if [ $line != '' ]; then
-          echo $line
-          if [ "$wifi_ssid" == '' ]; then
-            wifi_ssid=$line
-            wifi_nm_file="/etc/NetworkManager/system-connections/$wifi_ssid.nmconnection"
-          else
-            if [ "$wifi_password" == '' ]; then
-              wifi_password=$line
-              echo "WiFi: $wifi_ssid/$wifi_password"
-              sudo nmcli device wifi connect "$wifi_ssid" password "$wifi_password" ifname wlan0
-              echo "Created Network Manager config at $wifi_nm_file"
+        echo $f
+        wifi_ssid=""
+        wifi_password=""
+        for line in `head -10 $f`
+        do
+          if [ $line != '' ]; then
+            echo $line
+            if [ "$wifi_ssid" == '' ]; then
+              wifi_ssid=$line
+              wifi_nm_file="/etc/NetworkManager/system-connections/$wifi_ssid.nmconnection"
+            else
+              if [ "$wifi_password" == '' ]; then
+                wifi_password=$line
+                echo "WiFi: $wifi_ssid/$wifi_password"
+                sudo nmcli device wifi connect "$wifi_ssid" password "$wifi_password" ifname wlan0
+                echo "Created Network Manager config at $wifi_nm_file"
+              fi
             fi
           fi
-        fi
+        done
       done
-    done
+    fi
     pkill feh
 #  else
 #    echo "Partition $name is already mounted"
@@ -77,6 +84,14 @@ then
   pkill conky
   pkill unclutter
 
+
+  PID=`pgrep exiftran`
+  if [ ! -z "$PID" ]
+  then
+    echo "Exiftran is running, exiting"
+    exit 0
+  fi
+
   PID=`pgrep feh`
   if [ -z "$PID" ]
   then
@@ -92,7 +107,10 @@ then
 
     sudo chown -R orangepi $IMAGES_DIR 2>/dev/null
     sudo find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  2>/dev/null
-    /usr/bin/feh -r -z -q -p -Z -F -Y -D 55.0 $IMAGES_DIR || exit -1 &
+    #/usr/bin/feh -r -z -q -p -Z -F -Y -D 55.0 $IMAGES_DIR || exit -1 &
+#    feh -r -q -F -Y -D 15.0 -S name --start-at `find $IMAGES_DIR -size +1M | shuf | head -1` $IMAGES_DIR || exit -1 &
+    feh -r -q -F -Y -D 15.0 -S name --start-at `find $IMAGES_DIR -size +1M | shuf | head -1` --info 'echo %F | sed -E "s/^.*\/([0-9]{4})([0-9]{2})([0-9]{2})\_[0-9]+.*$/\1.\2.\3/g"' $IMAGES_DIR || exit -1 &
+
   fi
 else
   pkill feh
