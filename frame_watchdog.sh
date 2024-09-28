@@ -109,7 +109,7 @@ then
     sudo find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  2>/dev/null
     #/usr/bin/feh -r -z -q -p -Z -F -Y -D 55.0 $IMAGES_DIR || exit -1 &
 #    feh -r -q -F -Y -D 15.0 -S name --start-at `find $IMAGES_DIR -size +1M | shuf | head -1` $IMAGES_DIR || exit -1 &
-    feh -r -q -F -Y -D 15.0 -S name --start-at `find $IMAGES_DIR -size +1M | shuf | head -1` --info 'echo %F | sed -E "s/^.*\/([0-9]{4})([0-9]{2})([0-9]{2})\_[0-9]+.*$/\1.\2.\3/g"' $IMAGES_DIR || exit -1 &
+    feh -r -q -F -Y -D 15.0 -S name --start-at `find $IMAGES_DIR -size +1M | shuf | head -1` --info 'echo %F | sed -E "s/^.*+\///g" | sed -E "s/\.[^\.]+$//" | sed -E "s/^.*?([0-9]{4})([0-9]{2})([0-9]{2})\_[0-9]+.*$/\1.\2.\3/g"' $IMAGES_DIR || exit -1 &
 
   fi
 else
