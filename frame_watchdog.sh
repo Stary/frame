@@ -3,20 +3,13 @@
 DAY=800
 NIGHT=2400
 
-IMAGES_DIR=/home/orangepi/frame
-
-if [ -d ~/photo ]
-then
-  IMAGES_DIR=~/photo
-fi
+export DISPLAY=:0.0
+export XAUTHORITY=~/.Xauthority
 
 USB_DIR=/media/usb
 
-export DISPLAY=:0.0
-export XAUTHORITY=/home/orangepi/.Xauthority
-
-#exiftran -ai $IMAGES_DIR/*
-
+DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo"
+IMAGES_DIR=''
 
 ###################### Mount USB ####################
 
@@ -66,7 +59,6 @@ done
 
 #####################################################
 
-
 shopt -s extglob
 TIME=`date +%H%M | sed 's/^0\{1,3\}//'`
 
@@ -97,19 +89,25 @@ then
   then
     date
     echo "Переход в дневной режим - запуск рамки"
-    usb_images=`find $USB_DIR -size +100k | grep -i -E -e "(img|png)" | wc -l`
-
-    if (( $usb_images > 0 ))
-    then
-      echo "Найдено $usb_images графических файлов на внешнем носителе $USB_DIR, переключаемся на него"
-      IMAGES_DIR=$USB_DIR
-    fi
+    for d in $DIRS
+    do
+      if [ -d "$d" ]
+      then
+        cnt=`find $d -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | wc -l`
+        if (( $cnt > 0))
+        then
+          IMAGES_DIR=$d
+          echo "Каталог с фото: $IMAGES_DIR"
+          break
+        fi
+      fi
+    done
 
     sudo chown -R orangepi $IMAGES_DIR 2>/dev/null
     sudo find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  2>/dev/null
     #/usr/bin/feh -r -z -q -p -Z -F -Y -D 55.0 $IMAGES_DIR || exit -1 &
 #    feh -r -q -F -Y -D 15.0 -S name --start-at `find $IMAGES_DIR -size +1M | shuf | head -1` $IMAGES_DIR || exit -1 &
-    feh -r -q -F -Y -D 15.0 -S name --start-at `find $IMAGES_DIR -size +1M | shuf | head -1` --info '~/bin/get_date.sh %F' $IMAGES_DIR || exit -1 &
+    feh -r -q -F -Y -D 15.0 -S name --start-at "`find $IMAGES_DIR -size +1M | shuf | head -1`" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_date.sh %F' $IMAGES_DIR || exit -1 &
 
   fi
 else

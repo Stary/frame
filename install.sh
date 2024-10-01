@@ -12,7 +12,8 @@ fi
 USER=`whoami`
 SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
 HOME_DIR=`eval echo ~$USER`
-MEDIA_DIR="$HOME_DIR/frame"
+MEDIA_DIR="$HOME_DIR/photo"
+DEMO_DIR="$HOME_DIR/demo"
 CONF_DIR="$HOME_DIR/.config/conky"
 BIN_DIR="$HOME_DIR/bin"
 LOG_DIR="/var/log/frame"
@@ -30,7 +31,7 @@ then
   echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo EDITOR='tee -a' visudo
 fi
 
-for d in $MEDIA_DIR $CONF_DIR $BIN_DIR $LOG_DIR
+for d in $MEDIA_DIR $DEMO_DIR $CONF_DIR $BIN_DIR $LOG_DIR
 do
   echo $d
   sudo mkdir -p $d
