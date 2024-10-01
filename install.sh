@@ -20,6 +20,7 @@ LOG_DIR="/var/log/frame"
 CONF="conky.conf"
 FONT="UbuntuThin.ttf"
 MAIN_SCRIPT="frame_watchdog.sh"
+DATE_SCRIPT="get_date.sh"
 LOG_FILE="frame.log"
 
 SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | wc -l`
@@ -39,6 +40,7 @@ done
 if [ $SRC_DIR != $BIN_DIR ];
 then
   rsync -av $SRC_DIR/$MAIN_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$DATE_SCRIPT $BIN_DIR
 fi
 rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR
@@ -48,7 +50,7 @@ sudo ln -f -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 sudo apt-get -y update
 sudo apt-get -y upgrade
 
-sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe
+sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool
 
 sudo systemctl enable chrony
 sudo systemctl stop chrony
