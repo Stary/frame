@@ -92,3 +92,11 @@ sudo sed -i 's/Unattended-Upgrade "7"/Unattended-Upgrade "0"/' /etc/apt/apt.conf
 
 (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 
+
+pkill conky
+pkill unclutter
+pkill feh
+
+
+$BIN_DIR/$MAIN_SCRIPT
+
