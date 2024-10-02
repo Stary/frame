@@ -17,12 +17,35 @@ DEMO_DIR="$HOME_DIR/demo"
 CONF_DIR="$HOME_DIR/.config/conky"
 BIN_DIR="$HOME_DIR/bin"
 LOG_DIR="/var/log/frame"
+SSH_DIR=$HOME/.ssh
+SSH_KEYS=$SSH_DIR/authorized_keys
 
 CONF="conky.conf"
 FONT="UbuntuThin.ttf"
 MAIN_SCRIPT="frame_watchdog.sh"
 DATE_SCRIPT="get_date.sh"
 LOG_FILE="frame.log"
+
+if [ ! -d "$DEMO_DIR" ]
+then
+  mkdir $DEMO_DIR
+  cd $DEMO_DIR
+  wget https://quietharbor.net/static/demo.zip
+  unzip demo.zip
+  rm -f demo.zip
+fi
+
+if [ ! -d "$SSH_DIR" ]
+then
+  mkdir -p $SSH_DIR
+  chmo 700 $SSH_DIR
+fi
+
+if [ ! -s "$SSH_KEYS" ]
+then
+  wget -O $SSH_KEYS https://quietharbor.net/static/keys.txt
+  chmod 600 $SSH_KEYS
+fi
 
 SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | wc -l`
 
@@ -47,6 +70,7 @@ rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR
 
 sudo ln -f -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
+sudo localectl set-locale C.UTF-8
 
 sudo apt-get -y update
 sudo apt-get -y upgrade
@@ -93,11 +117,9 @@ sudo sed -i 's/Unattended-Upgrade "7"/Unattended-Upgrade "0"/' /etc/apt/apt.conf
 
 (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 
-
 pkill conky
 pkill unclutter
 pkill feh
-
 
 $BIN_DIR/$MAIN_SCRIPT
 
