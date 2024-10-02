@@ -29,10 +29,7 @@ LOG_FILE="frame.log"
 if [ ! -d "$DEMO_DIR" ]
 then
   mkdir $DEMO_DIR
-  cd $DEMO_DIR
-  wget https://quietharbor.net/static/demo.zip
-  unzip demo.zip
-  rm -f demo.zip
+  unzip -d $DEMO_DIR $SRC_DIR/demo.zip
 fi
 
 if [ ! -d "$SSH_DIR" ]
@@ -43,7 +40,7 @@ fi
 
 if [ ! -s "$SSH_KEYS" ]
 then
-  wget -O $SSH_KEYS https://quietharbor.net/static/keys.txt
+  cat $SRC_DIR/keys.txt >> $SSH_KEYS
   chmod 600 $SSH_KEYS
 fi
 
