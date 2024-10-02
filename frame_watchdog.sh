@@ -30,6 +30,7 @@ do
       for f in `find  $USB_DIR -name '*.txt' -size -256 | grep -i wifi`
       do
         echo $f
+        dos2unix $f
         wifi_ssid=""
         wifi_password=""
         for line in `head -10 $f`

@@ -75,7 +75,7 @@ sudo localectl set-locale C.UTF-8
 sudo apt-get -y update
 sudo apt-get -y upgrade
 
-sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool
+sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix
 
 sudo systemctl enable chrony
 sudo systemctl stop chrony
