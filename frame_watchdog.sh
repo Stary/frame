@@ -2,6 +2,19 @@
 
 DAY=800
 NIGHT=2400
+DELAY=55.0
+
+CONFIG='frame.cfg'
+
+if [ -s "$HOME/$CONFIG" ]
+then
+  source $HOME/$CONFIG
+fi
+echo "#Frame configuration
+DAY=$DAY
+NIGHT=$NIGHT
+DELAY=$DELAY
+" > $HOME/$CONFIG
 
 export DISPLAY=:0.0
 export XAUTHORITY=~/.Xauthority
@@ -10,6 +23,7 @@ USB_DIR=/media/usb
 
 DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
 #DIRS="$HOME/test"
+#DIRS="$HOME/demo2"
 IMAGES_DIR=''
 USER=`whoami`
 
@@ -107,6 +121,7 @@ then
     done
 
     sudo chown -R $USER $IMAGES_DIR 2>/dev/null
+
     PID=`pgrep find`
     if [ -z "$PID" ]
     then
@@ -124,18 +139,15 @@ then
     then
       echo "Найдем самую раннюю фотографию за дату $d"
       #f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1 | sed -E -e "s/^.*\///g"`
-      set -x
       f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1`
-      # | sed -E -e "s/ /\\\\\\ /g"
       if [ ! -z "$f" ]
       then
 	#printf -var f "%q" $f
 	ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
       fi
     fi
-    set -v
     set -x
-    feh -V -r -Z -F -Y -D 16.0 "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_date.sh %F' $IMAGES_DIR #|| exit -1 &
+    feh -q -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_date.sh %F' $IMAGES_DIR #|| exit -1 &
   fi
 else
   pkill feh
