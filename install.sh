@@ -76,11 +76,13 @@ sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Op
 
 sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix
 
-#apt-get install libimlib2-dev libheif-dev pkg-config build-essential
-#git clone https://github.com/vi/imlib2-heic.git
-#cd imlib2-heic/
-#make
-#sudo cp heic.so /usr/lib/aarch64-linux-gnu/imlib2/loaders/
+sudo apt-get -y install libimlib2-dev libheif-dev pkg-config build-essential
+pushd ~
+git clone https://github.com/vi/imlib2-heic.git
+cd imlib2-heic/
+make
+sudo rsync -av heic.so `find /usr/lib -name 'loaders' | grep imlib`
+popd
 
 sudo systemctl enable chrony
 sudo systemctl stop chrony
