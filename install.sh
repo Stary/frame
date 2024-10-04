@@ -23,7 +23,7 @@ SSH_KEYS=$SSH_DIR/authorized_keys
 CONF="conky.conf"
 FONT="UbuntuThin.ttf"
 MAIN_SCRIPT="frame_watchdog.sh"
-DATE_SCRIPT="get_date.sh"
+INFO_SCRIPT="get_info.sh"
 LOG_FILE="frame.log"
 
 if [ ! -d "$DEMO_DIR" ]
@@ -61,7 +61,9 @@ done
 if [ $SRC_DIR != $BIN_DIR ];
 then
   rsync -av $SRC_DIR/$MAIN_SCRIPT $BIN_DIR
-  rsync -av $SRC_DIR/$DATE_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$INFO_SCRIPT $BIN_DIR
+  #remove outdated script
+  rm -f $BIN_DIR/get_date.sh
 fi
 rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR

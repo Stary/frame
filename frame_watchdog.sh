@@ -147,7 +147,7 @@ then
       fi
     fi
     set -x
-    feh -q -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_date.sh %F' $IMAGES_DIR || exit -1 &
+    feh -q -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' $IMAGES_DIR || exit -1 &
   fi
 else
   pkill feh
