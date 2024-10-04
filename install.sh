@@ -20,10 +20,14 @@ sudo ln -f -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 sudo localectl set-locale C.UTF-8
 
 export DEBIAN_FRONTEND=noninteractive
-APT_OPTIONS="--allow-unauthenticated --allow-downgrades --allow-remove-essential --allow-change-held-packages"
 sudo apt-get --yes update
-sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
-sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
+sudo apt-get --yes upgrade
+sudo apt-get --yes dist-upgrade
+
+#APT_OPTIONS="--allow-unauthenticated --allow-downgrades --allow-remove-essential --allow-change-held-packages"
+#sudo apt-get --yes update
+#sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
+#sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
 
 sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix
 
@@ -46,9 +50,10 @@ sudo systemctl start cron
 
 
 sudo systemctl stop unattended-upgrades
-sudo apt-get -y purge unattended-upgrades
+sudo apt-get -y purge unattended-upgrades update-manager
 sudo chmod -x /etc/update-motd.d/40-orangepi-updates
 sudo sed -i 's/Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades
+sudo apt-get --yes autoremove
 
 sudo systemctl stop apt-daily.timer
 sudo systemctl stop apt-daily-upgrade.timer
