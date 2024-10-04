@@ -8,7 +8,8 @@ export XAUTHORITY=~/.Xauthority
 
 USB_DIR=/media/usb
 
-DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo"
+DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
+#DIRS="$HOME/test"
 IMAGES_DIR=''
 USER=`whoami`
 
@@ -114,10 +115,27 @@ then
     else
       echo "Автоповорот уже запущен, пропускаю"
     fi
-    #/usr/bin/feh -r -z -q -p -Z -F -Y -D 55.0 $IMAGES_DIR || exit -1 &
-#    feh -r -q -F -Y -D 15.0 -S name --start-at `find $IMAGES_DIR -size +1M | shuf | head -1` $IMAGES_DIR || exit -1 &
-    feh -r -q -Z -F -Y -D 15.0 -S name --start-at "`find $IMAGES_DIR -size +1M | shuf | head -1`" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_date.sh %F' $IMAGES_DIR || exit -1 &
 
+    d=`find $IMAGES_DIR -type f -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf | head -1`
+
+    #По-умолчанию порядок просто случайный, переключаемся на последовательный со случайной точкой старта, если имена файлов содержат дату
+    ORDER_OPTIONS=('-z')
+    if [ ! -z "$d" ]
+    then
+      echo "Найдем самую раннюю фотографию за дату $d"
+      #f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1 | sed -E -e "s/^.*\///g"`
+      set -x
+      f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1`
+      # | sed -E -e "s/ /\\\\\\ /g"
+      if [ ! -z "$f" ]
+      then
+	#printf -var f "%q" $f
+	ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
+      fi
+    fi
+    set -v
+    set -x
+    feh -V -r -Z -F -Y -D 16.0 "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_date.sh %F' $IMAGES_DIR #|| exit -1 &
   fi
 else
   pkill feh
@@ -132,7 +150,6 @@ else
 #    dclock -nobell -miltime -tails -noscroll -blink -nofade -noalarm -thickness 0.12 -slope 70.0 -bd "black" -bg "black" -fg "darkorange" -led_off "black" &
     sleep 2s
     unclutter -root 2>&1 >/dev/null &
-#    wmctrl -r dclock -b add,fullscreen,above
   fi
   wmctrl -r conky -b add,fullscreen,above
 fi
