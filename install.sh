@@ -29,7 +29,7 @@ sudo apt-get --yes dist-upgrade
 #sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 #sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
 
-sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix
+sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix python3-redis
 
 sudo apt-get -y install libimlib2-dev libheif-dev pkg-config build-essential
 pushd ~
@@ -76,14 +76,13 @@ sudo systemctl list-timers --all
 sudo sed -i 's/^DPkg/#DPkg/' /etc/apt/apt.conf.d/99update-notifier
 sudo sed -i 's/^APT/#APT/' /etc/apt/apt.conf.d/99update-notifier
 
-sudo sed -i 's/Unattended-Upgrade "7"/Unattended-Upgrade "0"/' /etc/apt/apt.conf.d/02-orangepi-periodic
+sudo sed -i -r 's/Unattended-Upgrade "[0-9]+"/Unattended-Upgrade "0"/' /etc/apt/apt.conf.d/02-orangepi-periodic
 
 keydb_installed=$(sudo dpkg -l keydb-server 2>/dev/null | wc -l)
-BASE_URL=https://download.keydb.dev/pkg/open_source/deb/ubuntu22.04_jammy/arm64/keydb-latest/
 
 if [ "$keydb_installed" -eq 0 ]
 then
-
+  BASE_URL=https://download.keydb.dev/pkg/open_source/deb/ubuntu22.04_jammy/arm64/keydb-latest/
   for f in $(wget -O - $BASE_URL 2>&1 | grep -i 'href="keydb' | grep -v sentinel | sed 's/.*href=\"//i' | sed 's/\".*//')
   do
     echo "f=$f"
