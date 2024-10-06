@@ -78,5 +78,27 @@ sudo sed -i 's/^APT/#APT/' /etc/apt/apt.conf.d/99update-notifier
 
 sudo sed -i 's/Unattended-Upgrade "7"/Unattended-Upgrade "0"/' /etc/apt/apt.conf.d/02-orangepi-periodic
 
+keydb_installed=$(sudo dpkg -l keydb-server 2>/dev/null | wc -l)
+BASE_URL=https://download.keydb.dev/pkg/open_source/deb/ubuntu22.04_jammy/arm64/keydb-latest/
+
+if [ "$keydb_installed" -eq 0 ]
+then
+
+  for f in $(wget -O - $BASE_URL 2>&1 | grep -i 'href="keydb' | grep -v sentinel | sed 's/.*href=\"//i' | sed 's/\".*//')
+  do
+    echo "f=$f"
+    wget -O /tmp/$f $BASE_URL/$f
+    sudo dpkg -i /tmp/$f
+    rm -f /tmp/$f
+  done
+else
+  echo "KeyDB is already installed"
+fi
+
+sudo systemctl enable keydb-server
+sudo systemctl start keydb-server
+sudo systemctl status keydb-server
+
+
 $SRC_DIR/update.sh
 
