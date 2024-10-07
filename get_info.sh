@@ -15,3 +15,5 @@ then
 fi
 
 echo $ts
+~/bin/get_place.py $f
+
