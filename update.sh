@@ -24,6 +24,7 @@ CONF="conky.conf"
 FONT="UbuntuThin.ttf"
 MAIN_SCRIPT="frame_watchdog.sh"
 INFO_SCRIPT="get_info.sh"
+PLACE_SCRIPT="get_place.py"
 LOG_FILE="frame.log"
 
 if [ ! -d "$SSH_DIR" ]
@@ -55,6 +56,7 @@ if [ $SRC_DIR != $BIN_DIR ];
 then
   rsync -av $SRC_DIR/$MAIN_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$INFO_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$PLACE_SCRIPT $BIN_DIR
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh
 fi

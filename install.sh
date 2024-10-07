@@ -29,7 +29,7 @@ sudo apt-get --yes dist-upgrade
 #sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 #sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
 
-sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix python3-redis
+sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix python3-redis python3-requests
 
 sudo apt-get -y install libimlib2-dev libheif-dev pkg-config build-essential
 pushd ~
