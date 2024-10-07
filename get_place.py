@@ -27,14 +27,17 @@ def get_place_descr(lat, lon):
     place_descr = None
     if r is not None:
         try:
-            user_places = r.geosearch(
-                name='user_places',
-                longitude=lon,
-                latitude=lat,
-                radius=1000,
-                unit='km',
-                withdist=True,
-                sort='ASC')
+            if hasattr(r, 'geosearch'):
+                user_places = r.geosearch(
+                    name='user_places',
+                    longitude=lon,
+                    latitude=lat,
+                    radius=1000,
+                    unit='km',
+                    withdist=True,
+                    sort='ASC')
+            else:
+                user_places = r.georadius('user_places', lon, lat, withdist=True, sort='ASC')
 
             for pr, dist in user_places:
                 descr, radius_str = pr.split('|')
@@ -53,14 +56,18 @@ def get_place_descr(lat, lon):
 
         try:
             if place_descr is None or place_descr == '':
-                cached_res = r.geosearch(
-                    name='nominatim',
-                    longitude=lon,
-                    latitude=lat,
-                    radius=1,
-                    unit='km',
-                    withdist=True,
-                    sort='ASC')
+                if hasattr(r,'geosearch'):
+                    cached_res = r.geosearch(
+                        name='nominatim',
+                        longitude=lon,
+                        latitude=lat,
+                        radius=1,
+                        unit='km',
+                        withdist=True,
+                        sort='ASC')
+                else:
+                    cached_res = r.georadius('nominatim', lon, lat, withdist=True, sort='ASC')
+
                 if cached_res is not None and len(cached_res) > 0:
                     print(f"got from cache: {cached_res}")
                     place_descr = cached_res[0][0]
