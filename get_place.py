@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 import traceback
 
 import redis
@@ -16,15 +18,19 @@ def set_place_descr(lat, lon, descr, radius = 100.0):
     global r
     if r is not None:
         try:
-            r.geoadd('user_places', [lon, lat, f"{descr}|{radius:.2f}"])
-            print(f"Added point {descr} at ({lat:.6f},{lon:.6f})")
+            name = f"{descr}|{radius:.2f}"
+            if hasattr(r, 'geosearch'):
+                r.geoadd('user_places', [lon, lat, name])
+            else:
+                r.geoadd('user_places', lon, lat, name)
+            #print(f"Added point {descr} at ({lat:.6f},{lon:.6f}) with radius {radius:.2f}")
         except Exception as e:
             eprint(f"Exception: {traceback.format_exc()}")
 
 
 def get_place_descr(lat, lon):
     global r
-    place_descr = None
+    place_descr = ''
     if r is not None:
         try:
             if hasattr(r, 'geosearch'):
@@ -37,7 +43,9 @@ def get_place_descr(lat, lon):
                     withdist=True,
                     sort='ASC')
             else:
-                user_places = r.georadius('user_places', lon, lat, radius=1000, unit='km', withdist=True, sort='ASC')
+                user_places = r.georadius('user_places', lon, lat, 1000, 'km', withdist=True, sort='ASC')
+
+            #print(user_places)
 
             for pr, dist in user_places:
                 descr, radius_str = pr.split('|')
@@ -49,7 +57,7 @@ def get_place_descr(lat, lon):
                 if dist < radius:
                     place_descr = descr
                     break
-                print(f"{descr=} {radius=} {dist=}")
+                #print(f"{descr=} {radius=} {dist=}")
 
         except Exception as e:
             eprint(f"Exception: {traceback.format_exc()}")
@@ -66,25 +74,37 @@ def get_place_descr(lat, lon):
                         withdist=True,
                         sort='ASC')
                 else:
-                    cached_res = r.georadius('nominatim', lon, lat, radius=1, unit='km', withdist=True, sort='ASC')
+                    cached_res = r.georadius('nominatim', lon, lat, 1, 'km', withdist=True, sort='ASC')
+
+                #print(cached_res)
 
                 if cached_res is not None and len(cached_res) > 0:
-                    print(f"got from cache: {cached_res}")
-                    place_descr = cached_res[0][0]
+                    #print(f"got from cache: {cached_res}")
+                    place_descr = cached_res[0][0] + '.'
         except Exception as e:
             eprint(f"Exception: {traceback.format_exc()}")
 
     if place_descr is None or place_descr == '':
         try:
             url = f'https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json&accept-language=ru&zoom=15'
-            print(url)
+            #print(url)
             req_res = requests.get(url=url)
-            result_json = req_res.json()
-            print(f"got from service {result_json}")
-            if result_json is not None and 'display_name' in result_json:
-                place_descr = result_json['display_name']
-                if r is not None:
-                    r.geoadd('nominatim', [lon, lat, place_descr])
+            #print(req_res)
+            test_json = '''{'place_id': 395572080, 'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright', 'osm_type': 'relation', 'osm_id': 17865147, 'lat': '59.9875504', 'lon': '31.042596357982738', 'class': 'landuse', 'type': 'residential', 'place_rank': 22, 'importance': 0.10672765621423665, 'addresstype': 'residential', 'name': 'Коттеджный поселок "Тихая Ладога"', 'display_name': 'Коттеджный поселок "Тихая Ладога", Морозовское городское поселение, Всеволожский район, Ленинградская область, Северо-Западный федеральный округ, Россия', 'address': {'residential': 'Коттеджный поселок "Тихая Ладога"', 'municipality': 'Морозовское городское поселение', 'county': 'Всеволожский район', 'state': 'Ленинградская область', 'ISO3166-2-lvl4': 'RU-LEN', 'region': 'Северо-Западный федеральный округ', 'country': 'Россия', 'country_code': 'ru'}, 'boundingbox': ['59.9843968', '59.9919508', '31.0370010', '31.0474243']}'''
+            if req_res.status_code == 200:
+                result_json = req_res.json()
+            elif test_json != '':
+                result_json = test_json
+            if result_json != '':
+                #print(f"got from service {result_json}")
+                if result_json is not None and 'display_name' in result_json:
+                    place_descr = result_json['display_name']
+                    if r is not None:
+                        #print(f"Adding Nominatinm point {place_descr} at {lat:.6f},{lon:.6f}")
+                        if hasattr(r, 'geosearch'):
+                            r.geoadd('nominatim', [lon, lat, place_descr])
+                        else:
+                            r.geoadd('nominatim', lon, lat, place_descr)
         except Exception as e:
             eprint(f"Exception: {traceback.format_exc()}")
 
