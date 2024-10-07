@@ -90,12 +90,9 @@ def get_place_descr(lat, lon):
             #print(url)
             req_res = requests.get(url=url)
             #print(req_res)
-            test_json = '''{'place_id': 395572080, 'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright', 'osm_type': 'relation', 'osm_id': 17865147, 'lat': '59.9875504', 'lon': '31.042596357982738', 'class': 'landuse', 'type': 'residential', 'place_rank': 22, 'importance': 0.10672765621423665, 'addresstype': 'residential', 'name': 'Коттеджный поселок "Тихая Ладога"', 'display_name': 'Коттеджный поселок "Тихая Ладога", Морозовское городское поселение, Всеволожский район, Ленинградская область, Северо-Западный федеральный округ, Россия', 'address': {'residential': 'Коттеджный поселок "Тихая Ладога"', 'municipality': 'Морозовское городское поселение', 'county': 'Всеволожский район', 'state': 'Ленинградская область', 'ISO3166-2-lvl4': 'RU-LEN', 'region': 'Северо-Западный федеральный округ', 'country': 'Россия', 'country_code': 'ru'}, 'boundingbox': ['59.9843968', '59.9919508', '31.0370010', '31.0474243']}'''
+            test_json = {'place_id': 395572080, 'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright', 'osm_type': 'relation', 'osm_id': 17865147, 'lat': '59.9875504', 'lon': '31.042596357982738', 'class': 'landuse', 'type': 'residential', 'place_rank': 22, 'importance': 0.10672765621423665, 'addresstype': 'residential', 'name': 'Коттеджный поселок "Тихая Ладога"', 'display_name': 'Коттеджный поселок "Тихая Ладога", Морозовское городское поселение, Всеволожский район, Ленинградская область, Северо-Западный федеральный округ, Россия', 'address': {'residential': 'Коттеджный поселок "Тихая Ладога"', 'municipality': 'Морозовское городское поселение', 'county': 'Всеволожский район', 'state': 'Ленинградская область', 'ISO3166-2-lvl4': 'RU-LEN', 'region': 'Северо-Западный федеральный округ', 'country': 'Россия', 'country_code': 'ru'}, 'boundingbox': ['59.9843968', '59.9919508', '31.0370010', '31.0474243']}
             if req_res.status_code == 200:
                 result_json = req_res.json()
-            elif test_json != '':
-                result_json = test_json
-            if result_json != '':
                 #print(f"got from service {result_json}")
                 if result_json is not None and 'display_name' in result_json:
                     place_descr = result_json['display_name']
@@ -105,6 +102,10 @@ def get_place_descr(lat, lon):
                             r.geoadd('nominatim', [lon, lat, place_descr])
                         else:
                             r.geoadd('nominatim', lon, lat, place_descr)
+            else:
+                eprint(f"{req_res}")
+#            elif test_json != '':
+#                result_json = test_json
         except Exception as e:
             eprint(f"Exception: {traceback.format_exc()}")
 
