@@ -18,7 +18,7 @@ fi
 if [ ! -z "$ts" ]
 then
   export LC_ALL=ru_RU.UTF-8
-  ts2=`date --date "$ts"`
+  ts2=`date --date "$ts" +'%a %d %B %Y %R'`
   if [ ! -z "$ts2" ]
   then
     ts=$ts2
@@ -27,5 +27,9 @@ fi
 
 place=$(~/bin/get_place.py $f)
 
-echo $ts $place
+echo $ts 
+if [ ! -z "$place" ]
+then
+  echo $place
+fi
 
