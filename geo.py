@@ -177,7 +177,7 @@ def get_place_descr(lat, lon):
                     withdist=True,
                     sort='ASC')
             else:
-                cached_res = r.georadius('nominatim', lon, lat, 1, 'km', withdist=True, sort='ASC')
+                cached_res = r.georadius('nominatim', lon, lat, 100, 'm', withdist=True, sort='ASC')
 
             if cached_res is not None and len(cached_res) > 0:
                 logger.info(f"got from cache: {cached_res}")
