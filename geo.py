@@ -110,7 +110,44 @@ def set_place_descr(lat, lon, descr, radius = 100.0):
                 r.geoadd('user_places', lon, lat, name)
             logger.info(f"Added point {descr} at ({lat:.6f},{lon:.6f}) with radius {radius:.2f}")
         except Exception as e:
-            eprint(f"Exception: {traceback.format_exc()}")
+            logger.error(f"Exception: {traceback.format_exc()}")
+
+
+def get_place_descr(lat, lon):
+    global r
+    global logger
+    place_descr = ''
+    if r is not None:
+        try:
+            if hasattr(r, 'geosearch'):
+                user_places = r.geosearch(
+                    name='user_places',
+                    longitude=lon,
+                    latitude=lat,
+                    radius=1000,
+                    unit='km',
+                    withdist=True,
+                    sort='ASC')
+            else:
+                user_places = r.georadius('user_places', lon, lat, 1000, 'km', withdist=True, sort='ASC')
+            logger.debug(f"{user_places=}")
+            for pr, dist in user_places:
+                descr, radius_str = pr.split('|')
+                try:
+                    radius = float(radius_str)
+                except Exception as e:
+                    radius = 10.0
+
+                if dist < radius:
+                    place_descr = descr
+                    logger.debug(f"User defined area '{descr}' with radius {radius:.2f} found in {dist:.2f} km")
+                    break
+                else:
+                    logger.debug(f"User defined area '{descr}' with radius {radius:.2f} is too far ({dist:.2f} km)")
+        except Exception as e:
+            logger.error(f"Exception: {traceback.format_exc()}")
+
+    return place_descr
 
 
 
