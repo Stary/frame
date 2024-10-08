@@ -68,7 +68,7 @@ def get_nominatim_data(lat, lon):
     global r
     global logger
     language = 'ru'
-    zoom = 15
+    zoom = 18
     lat_str = f"{lat:.6f}"
     lon_str = f"{lon:.6f}"
     key=f"({lat_str},{lon_str},{zoom},{language})"
@@ -206,10 +206,9 @@ def get_place_descr(lat, lon):
                             addr.append(address[p])
                             break
 
-                    if 'residential' in address:
-                        addr.append(address['residential'])
-
-                    place_descr = ', '.join(addr)
+                    for p in ['residential', 'square']:
+                        if p in address:
+                            addr.append(address[p])
 
     except Exception as e:
         logger.error(f"Exception: {traceback.format_exc()}")
