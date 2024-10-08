@@ -24,8 +24,13 @@ CONF="conky.conf"
 FONT="UbuntuThin.ttf"
 MAIN_SCRIPT="frame_watchdog.sh"
 INFO_SCRIPT="get_info.sh"
+GEO_SCRIPT="geo.py"
 PLACE_SCRIPT="get_place.py"
 LOG_FILE="frame.log"
+
+pushd $SRC_DIR
+git pull
+popd
 
 if [ ! -d "$SSH_DIR" ]
 then
@@ -57,6 +62,7 @@ then
   rsync -av $SRC_DIR/$MAIN_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$INFO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$PLACE_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh
 fi
