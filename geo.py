@@ -206,7 +206,7 @@ def get_place_descr(lat, lon):
                             addr.append(address[p])
                             break
 
-                    for p in ['residential', 'square']:
+                    for p in ['residential', 'square', 'tourism']:
                         if p in address:
                             addr.append(address[p])
 
