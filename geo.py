@@ -172,8 +172,8 @@ def get_place_descr(lat, lon):
                     name='nominatim',
                     longitude=lon,
                     latitude=lat,
-                    radius=1,
-                    unit='km',
+                    radius=100,
+                    unit='m',
                     withdist=True,
                     sort='ASC')
             else:
