@@ -19,7 +19,7 @@ fi
 
 if [ ! -z "$ts" ]
 then
-  dow=`date --date $(sed "s/\./-/g" <<< "2017.01.01") +%a`
+  dow=`date --date $(sed "s/\./-/g" <<< "$ts" | sed "s/ .*//") +%a`
 fi
 
 place=$(~/bin/get_place.py $f)
