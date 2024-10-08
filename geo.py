@@ -53,6 +53,7 @@ def throttle(ms):
         left_ms = ms - delta_ms
     else:
         left_ms = ms
+        delta_ms = 0.0
 
     logger.debug(f"{last_ts=} {time.time()=:.6f} {delta_ms=:.6f} {ms=:.6f} {left_ms=:.6f}")
 
@@ -81,6 +82,7 @@ def get_nominatim_data(lat, lon):
             logger.debug(f"cached: {data_str}")
         else:
             url = f'https://nominatim.openstreetmap.org/reverse?lat={lat_str}&lon={lon_str}&format=json&accept-language={language}&zoom={zoom}'
+            logger.debug(f"{url=}")
             headers = {'User-Agent': 'Photo Frame v.1.0'}
             throttle(1500)
             req_res = requests.get(url=url, headers=headers)
@@ -116,21 +118,33 @@ def set_place_descr(lat, lon, descr, radius = 100.0):
 def get_place_descr(lat, lon):
     global r
     global logger
+
+    logger.debug(f"in get_place_descr({lat:.6f},{lon:.6f}")
+
+    if r is None:
+        return 'KeyDB ERROR'
+
     place_descr = ''
-    if r is not None:
-        try:
-            if hasattr(r, 'geosearch'):
-                user_places = r.geosearch(
-                    name='user_places',
-                    longitude=lon,
-                    latitude=lat,
-                    radius=1000,
-                    unit='km',
-                    withdist=True,
-                    sort='ASC')
-            else:
-                user_places = r.georadius('user_places', lon, lat, 1000, 'km', withdist=True, sort='ASC')
+
+    #Шаг 1 - поиск ближайшей области, заданной пользователем, в радиус которой попадает точка
+    try:
+        #Для совместимости реализован вызов двух вариантов методов модуля redis
+        #версию модуля определяем по наличию метода geosearch
+        if hasattr(r, 'geosearch'):
+            user_places = r.geosearch(
+                name='user_places',
+                longitude=lon,
+                latitude=lat,
+                radius=1000,
+                unit='km',
+                withdist=True,
+                sort='ASC')
+        else:
+            user_places = r.georadius('user_places', lon, lat, 1000, 'km', withdist=True, sort='ASC')
+
+        if len(user_places) > 0:
             logger.debug(f"{user_places=}")
+
             for pr, dist in user_places:
                 descr, radius_str = pr.split('|')
                 try:
@@ -140,12 +154,65 @@ def get_place_descr(lat, lon):
 
                 if dist < radius:
                     place_descr = descr
-                    logger.debug(f"User defined area '{descr}' with radius {radius:.2f} found in {dist:.2f} km")
+                    logger.info(f"User defined area '{descr}' with radius {radius:.2f} found in {dist:.2f} km")
                     break
                 else:
                     logger.debug(f"User defined area '{descr}' with radius {radius:.2f} is too far ({dist:.2f} km)")
-        except Exception as e:
-            logger.error(f"Exception: {traceback.format_exc()}")
+
+    except Exception as e:
+        logger.error(f"Exception: {traceback.format_exc()}")
+
+
+    #Шаг 2 - ищем в кэше Nominatim второго уровня (координаты округляются до 100м)
+    #(первый уровень блокирует повторные запросы к сервису с точно совпадающими координатами, без округления)
+    try:
+        if place_descr is None or place_descr == '':
+            if hasattr(r, 'geosearch'):
+                cached_res = r.geosearch(
+                    name='nominatim',
+                    longitude=lon,
+                    latitude=lat,
+                    radius=1,
+                    unit='km',
+                    withdist=True,
+                    sort='ASC')
+            else:
+                cached_res = r.georadius('nominatim', lon, lat, 1, 'km', withdist=True, sort='ASC')
+
+            if cached_res is not None and len(cached_res) > 0:
+                logger.info(f"got from cache: {cached_res}")
+                place_descr = cached_res[0][0] + '.'
+
+    except Exception as e:
+        logger.error(f"Exception: {traceback.format_exc()}")
+
+    #Шаг 3 - поиск по точным координатам в сервисе Nominatim
+    try:
+        if place_descr is None or place_descr == '':
+            nominatim_data = get_nominatim_data(lat, lon)
+            logger.debug(nominatim_data)
+            if nominatim_data is not None and isinstance(nominatim_data, dict):
+                if 'address' in nominatim_data:
+                    address = nominatim_data['address']
+                    addr = []
+
+                    logger.debug(f"{address=}")
+
+                    if 'country_code' in address and 'country' in address and address['country_code'] != 'ru':
+                        addr.append(address['country'])
+
+                    for p in ['town', 'locality', 'municipality', 'county', 'state', 'city']:
+                        if p in address:
+                            addr.append(address[p])
+                            break
+
+                    if 'residential' in address:
+                        addr.append(address['residential'])
+
+                    place_descr = ', '.join(addr)
+
+    except Exception as e:
+        logger.error(f"Exception: {traceback.format_exc()}")
 
     return place_descr
 
@@ -154,15 +221,16 @@ def get_place_descr(lat, lon):
 LOG_LEVEL = logging.DEBUG
 LOG_DIR = '/var/log/frame'
 
-
-os.environ['REDIS_HOST'] = '192.168.1.123'
+if __name__ == '__main__':
+    os.environ['REDIS_HOST'] = '192.168.1.123'
 
 logger = init_logging()
 r = connect_redis()
 
-
-for p in [[59.442, 30.3459], [48.852, 2.294572], [59.991, 31.03]]:
-    print(get_nominatim_data(p[0], p[1]))
+if __name__ == '__main__':
+    for p in [[59.855159, 30.350305], [59.423, 30.3459], [48.853, 2.294572], [59.992, 31.03]]:
+        #print(get_nominatim_data(p[0], p[1]))
+        print(get_place_descr(p[0], p[1]))
 
 
 
