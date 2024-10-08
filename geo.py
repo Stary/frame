@@ -201,12 +201,12 @@ def get_place_descr(lat, lon):
                     if 'country_code' in address and 'country' in address and address['country_code'] != 'ru':
                         addr.append(address['country'])
 
-                    for p in ['town', 'locality', 'municipality', 'county', 'state', 'city']:
+                    for p in ['village', 'town', 'locality', 'municipality', 'county', 'state', 'city']:
                         if p in address:
                             addr.append(address[p])
                             break
 
-                    for p in ['neighbourhood', 'residential', 'square', 'tourism', 'historic', 'shop']:
+                    for p in ['neighbourhood', 'residential', 'square', 'tourism', 'historic', 'shop', 'amenity']:
                         if p in address:
                             addr.append(address[p])
 
