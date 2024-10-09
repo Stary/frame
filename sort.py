@@ -1,3 +1,4 @@
+import copy
 import os
 import hashlib
 import re
@@ -5,10 +6,19 @@ import platform
 import time
 import subprocess
 import geo
+import json
+
+meta = dict()
+
 
 def creation_date(path_to_file, force_exif=False):
+    global meta
 
     filename = os.path.basename(path_to_file)
+
+    if filename not in meta:
+        meta[filename] = dict()
+
     print(f"{path_to_file=} {filename=}")
     if not force_exif and re.match(r'^20[0-9]{6}\_[0-9]{6}', filename):
         time_obj = time.strptime(filename[0:15], '%Y%m%d_%H%M%S')
@@ -23,12 +33,22 @@ def creation_date(path_to_file, force_exif=False):
             if len(attr) == 2:
                 exif[attr[0]] = attr[1]
                 print(f"{attr[0]} = {attr[1]}")
+
+        if 'GPS Latitude' in exif and 'GPS Longitude' in exif:
+            latitude = float(exif['GPS Latitude'])
+            longitude = float(exif['GPS Longitude'])
+            print(f"{latitude=}, {longitude=}")
+            meta[filename]['lat'] = latitude
+            meta[filename]['lon'] = longitude
+            meta[filename]['address'] = geo.get_place_descr(latitude, longitude, raw=True)
+
         for p in ('Create Date', 'Date Created', 'Date/Time Original', 'GPS Date/Time'):
             if p in exif:
                 try:
                     time_obj = time.strptime(exif[p][0:19], '%Y:%m:%d %H:%M:%S')
                     print(f"EXIF: {p} = {exif[p]} = {time_obj}")
                     if int(time_obj.tm_year) >= 1990:
+                        meta[filename]['created'] = exif[p][0:19]
                         return time.mktime(time_obj)
                 except ValueError as ve:
                     pass
@@ -98,42 +118,17 @@ for i in sorted(os.scandir(source_dir), key=lambda e: e.name):
                 if os.path.isfile(new_name):
                     print(f"{count}!{full_path} => {new_name_uniq}")
                     os.rename(full_path, new_name_uniq)
+                    meta[new_name_uniq] = copy.deepcopy(meta[full_path])
                 else:
                     print(f"{count}.{full_path} => {new_name}")
                     os.rename(full_path, new_name)
+                    meta[new_name] = copy.deepcopy(meta[full_path])
+                del meta[full_path]
 
        # files[full_path] = {"ct": ct, "ext": ext.lower(), "hash": hash, "path": os.sep.join(path)}
         if count % 100 == 0:
             print(f"{count} files processed")
 
+        print(json.dumps(meta, indent=4, sort_keys=True, ensure_ascii=False))
+
 exit(0)
-
-for file in files.copy():
-    hash = files[file]["hash"]
-    if hash in known_hash:
-        print(f"!!! {file} {ct} {known_hash[hash]} {files[known_hash[hash]]['ct']} {hash}")
-        os.remove(file)
-        del files[file]
-    else:
-        known_hash[hash] = file
-
-for file, p in sorted(files.items(), key=lambda k: k[1]["ct"] + k[1]["hash"]):
-    hash = p["hash"]
-    ct = p["ct"]
-    path = p["path"]
-    ext = p["ext"]
-    suffix = ''
-    if ct in known_ct:
-        cnt = known_ct[ct]
-        suffix = f"_{cnt}"
-        known_ct[ct] += 1
-    else:
-        known_ct[ct] = 1
-    if ext != '':
-        suffix += '.' + ext
-    file_new = os.path.join(path, f"{ct}{suffix}")
-    # print(f"{file=} => {file_new=} {path=} {ct=} {suffix=} {ext=} {hash=}")
-    if file_new != file:
-        print(f"Let's rename {file} => {file_new}")
-        os.rename(file, file_new)
-# print(files)
