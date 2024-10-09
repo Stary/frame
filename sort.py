@@ -11,13 +11,19 @@ import json
 meta = dict()
 
 
+def save_meta(source_dir):
+    global meta
+    with open(os.path.join(source_dir,'photo.json'), 'w', encoding='utf8') as json_file:
+        json.dump(meta, json_file, indent=4, sort_keys=True, ensure_ascii=False)
+
+
 def creation_date(path_to_file, force_exif=False):
     global meta
 
     filename = os.path.basename(path_to_file)
 
     if filename not in meta:
-        meta[filename] = dict()
+        meta[path_to_file] = dict()
 
     print(f"{path_to_file=} {filename=}")
     if not force_exif and re.match(r'^20[0-9]{6}\_[0-9]{6}', filename):
@@ -32,15 +38,15 @@ def creation_date(path_to_file, force_exif=False):
             attr = re.split(r'\s*:\s+', line, maxsplit=1)
             if len(attr) == 2:
                 exif[attr[0]] = attr[1]
-                print(f"{attr[0]} = {attr[1]}")
+                #print(f"{attr[0]} = {attr[1]}")
 
         if 'GPS Latitude' in exif and 'GPS Longitude' in exif:
             latitude = float(exif['GPS Latitude'])
             longitude = float(exif['GPS Longitude'])
-            print(f"{latitude=}, {longitude=}")
-            meta[filename]['lat'] = latitude
-            meta[filename]['lon'] = longitude
-            meta[filename]['address'] = geo.get_place_descr(latitude, longitude, raw=True)
+            #print(f"{latitude=}, {longitude=}")
+            meta[path_to_file]['lat'] = latitude
+            meta[path_to_file]['lon'] = longitude
+            meta[path_to_file]['address'] = geo.get_place_descr(latitude, longitude, raw=True)
 
         for p in ('Create Date', 'Date Created', 'Date/Time Original', 'GPS Date/Time'):
             if p in exif:
@@ -48,7 +54,7 @@ def creation_date(path_to_file, force_exif=False):
                     time_obj = time.strptime(exif[p][0:19], '%Y:%m:%d %H:%M:%S')
                     print(f"EXIF: {p} = {exif[p]} = {time_obj}")
                     if int(time_obj.tm_year) >= 1990:
-                        meta[filename]['created'] = exif[p][0:19]
+                        meta[path_to_file]['created'] = exif[p][0:19]
                         return time.mktime(time_obj)
                 except ValueError as ve:
                     pass
@@ -66,16 +72,8 @@ def creation_date(path_to_file, force_exif=False):
             # so we'll settle for when its content was last modified.
             return stat.st_mtime
 
-
-#print(time.strptime('1990-01-01', '%Y-%m-%d'))
-#exit(0)
-
-#print(time.localtime(creation_date('/Users/sergey/Photo/icloud/8396.HEIC')))
-#print(creation_date('/Users/sergey/Photo/icloud/8396.HEIC'))
-#exit(0)
-
 source_dir=''
-dirs = ["/Users/sergey/Photo/icloud_test", "/home/orangepi/frame"]
+dirs = ["/Users/sergey/Photo/icloud", "/home/orangepi/frame"]
 for d in dirs:
     if os.path.isdir(d):
         source_dir = d
@@ -100,8 +98,6 @@ for i in sorted(os.scandir(source_dir), key=lambda e: e.name):
 
         full_path = i.path
         ctime = time.localtime(creation_date(full_path, force_exif=True))
-        #print(f"{full_path} {ctime=}")
-        #name3 = f"{ctime.tm_year}{ctime.tm_mon:02d}{ctime.tm_mday:02d}_{ctime.tm_hour:02d}{ctime.tm_min:02d}{ctime.tm_sec:02d}"
         ct = f"{ctime.tm_year}{ctime.tm_mon:02d}{ctime.tm_mday:02d}_{ctime.tm_hour:02d}{ctime.tm_min:02d}{ctime.tm_sec:02d}"
         suffix = '.' + ext if ext != '' else ''
         suffix_uniq = '_' + str(count) + suffix
@@ -127,8 +123,10 @@ for i in sorted(os.scandir(source_dir), key=lambda e: e.name):
 
        # files[full_path] = {"ct": ct, "ext": ext.lower(), "hash": hash, "path": os.sep.join(path)}
         if count % 100 == 0:
-            print(f"{count} files processed")
+            print(f"======== {count} files processed =======")
+            save_meta(source_dir)
 
-        print(json.dumps(meta, indent=4, sort_keys=True, ensure_ascii=False))
+save_meta(source_dir)
+        #print(json.dumps(meta, indent=4, sort_keys=True, ensure_ascii=False))
 
 exit(0)
