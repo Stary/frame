@@ -23,7 +23,7 @@ def init_logging():
 
     log_file = os.path.join(LOG_DIR if os.path.isdir(LOG_DIR) else '.', 'geo.log')
     try:
-        fh = logging.handlers.RotatingFileHandler(log_file)
+        fh = logging.handlers.RotatingFileHandler(log_file, maxBytes=1024*1024, backupCount=10)
         fh.setLevel(LOG_LEVEL)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
@@ -256,6 +256,46 @@ logger = init_logging()
 r = connect_redis()
 
 if __name__ == '__main__':
+    meta_file = os.path.join('/Users/sergey/Photo/icloud', 'photo.json')
+    with open(meta_file) as json_file:
+        meta = json.load(json_file)
+        all_p = dict()
+        all_p_v = dict()
+        for f in meta:
+            if 'address' in meta[f]:
+                for p, v in meta[f]['address'].items():
+
+                    if p in ['postcode']:
+                        continue
+
+                    if p.startswith('ISO'):
+                        continue
+
+                    if re.match(r'^\[0-9]+$', v):
+                        continue
+
+                    v2 = re.sub(r'[a-zA-Zа-яА-Я0-9\s\"\-]','', v, flags=re.DOTALL | re.IGNORECASE)
+                    if len(v2) > 3:
+                        #print(f"!!!!!{v2} ({v})")
+                        continue
+
+                    v3 = re.sub(r'[^a-zA-Zа-яА-Я]', '', v, flags=re.DOTALL | re.IGNORECASE)
+                    if len(v3) < 4 and p not in ['country_code', 'postcode']:
+                        #print(f"!!!!!{v3} ({v}) {p=}")
+                        continue
+
+                    if p not in all_p:
+                        all_p_v[p] = dict()
+                        all_p[p] = 1
+                    else:
+                        all_p[p] += 1
+                    if v not in all_p_v[p]:
+                        all_p_v[p][v] = 1
+                    else:
+                        all_p_v[p][v] += 1
+        print(json.dumps(all_p_v, indent=4, sort_keys=True, ensure_ascii=False))
+    sys.exit(0)
+
     for p in [[55.756098, 37.638963]]: #, [59.855159, 30.350305], [59.423, 30.3459], [48.853, 2.294572], [59.992, 31.03]]:
         #print(get_nominatim_data(p[0], p[1]))
         print(get_place_descr(p[0], p[1], raw=True))
