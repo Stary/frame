@@ -114,7 +114,8 @@ def get_descr_by_address(address):
             addr.append(address[p])
             break
 
-    for p in ['road', 'neighbourhood', 'residential', 'square', 'tourism', 'historic', 'shop', 'amenity']:
+    for p in ['road', 'hamlet', 'neighbourhood', 'residential', 'square',
+              'tourism', 'historic', 'shop', 'amenity', 'aeroway']:
         if p in address:
             addr.append(address[p])
 
@@ -141,7 +142,7 @@ def set_place_descr(lat, lon, descr, radius = 100.0):
             logger.error(f"Exception: {traceback.format_exc()}")
 
 
-def get_place_descr(lat, lon):
+def get_place_descr(lat, lon, raw=False):
     global r
     global logger
 
@@ -155,36 +156,37 @@ def get_place_descr(lat, lon):
 
     #Шаг 1 - поиск ближайшей области, заданной пользователем, в радиус которой попадает точка
     try:
-        #Для совместимости реализован вызов двух вариантов методов модуля redis
-        #версию модуля определяем по наличию метода geosearch
-        if hasattr(r, 'geosearch'):
-            user_places = r.geosearch(
-                name='user_places',
-                longitude=lon,
-                latitude=lat,
-                radius=1000,
-                unit='km',
-                withdist=True,
-                sort='ASC')
-        else:
-            user_places = r.georadius('user_places', lon, lat, 1000, 'km', withdist=True, sort='ASC')
+        if not raw:
+            #Для совместимости реализован вызов двух вариантов методов модуля redis
+            #версию модуля определяем по наличию метода geosearch
+            if hasattr(r, 'geosearch'):
+                user_places = r.geosearch(
+                    name='user_places',
+                    longitude=lon,
+                    latitude=lat,
+                    radius=1000,
+                    unit='km',
+                    withdist=True,
+                    sort='ASC')
+            else:
+                user_places = r.georadius('user_places', lon, lat, 1000, 'km', withdist=True, sort='ASC')
 
-        if len(user_places) > 0:
-            logger.debug(f"{user_places=}")
+            if len(user_places) > 0:
+                logger.debug(f"{user_places=}")
 
-            for pr, dist in user_places:
-                descr, radius_str = pr.split('|')
-                try:
-                    radius = float(radius_str)
-                except Exception as e:
-                    radius = 10.0
+                for pr, dist in user_places:
+                    descr, radius_str = pr.split('|')
+                    try:
+                        radius = float(radius_str)
+                    except Exception as e:
+                        radius = 10.0
 
-                if dist < radius:
-                    place_descr = descr
-                    logger.info(f"User defined area '{descr}' with radius {radius:.2f} found in {dist:.2f} km")
-                    break
-                else:
-                    logger.debug(f"User defined area '{descr}' with radius {radius:.2f} is too far ({dist:.2f} km)")
+                    if dist < radius:
+                        place_descr = descr
+                        logger.info(f"User defined area '{descr}' with radius {radius:.2f} found in {dist:.2f} km")
+                        break
+                    else:
+                        logger.debug(f"User defined area '{descr}' with radius {radius:.2f} is too far ({dist:.2f} km)")
 
     except Exception as e:
         logger.error(f"Exception: {traceback.format_exc()}")
@@ -239,9 +241,10 @@ def get_place_descr(lat, lon):
         logger.error(f"Exception: {traceback.format_exc()}")
 
     logger.info(f"<<<<<< ({lat:.6f},{lon:.6f}) => {place_descr}")
-    return place_descr
-
-
+    if raw:
+        return address
+    else:
+        return place_descr
 
 LOG_LEVEL = logging.DEBUG
 LOG_DIR = '/var/log/frame'
@@ -255,7 +258,7 @@ r = connect_redis()
 if __name__ == '__main__':
     for p in [[55.756098, 37.638963]]: #, [59.855159, 30.350305], [59.423, 30.3459], [48.853, 2.294572], [59.992, 31.03]]:
         #print(get_nominatim_data(p[0], p[1]))
-        print(get_place_descr(p[0], p[1]))
+        print(get_place_descr(p[0], p[1], raw=True))
 
 
 

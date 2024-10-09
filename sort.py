@@ -4,6 +4,7 @@ import re
 import platform
 import time
 import subprocess
+import geo
 
 def creation_date(path_to_file, force_exif=False):
 
