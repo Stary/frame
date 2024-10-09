@@ -172,12 +172,12 @@ def get_place_descr(lat, lon):
                     name='nominatim',
                     longitude=lon,
                     latitude=lat,
-                    radius=100,
+                    radius=50,
                     unit='m',
                     withdist=True,
                     sort='ASC')
             else:
-                cached_res = r.georadius('nominatim', lon, lat, 100, 'm', withdist=True, sort='ASC')
+                cached_res = r.georadius('nominatim', lon, lat, 50, 'm', withdist=True, sort='ASC')
 
             if cached_res is not None and len(cached_res) > 0:
                 logger.info(f"got from cache: {cached_res}")
@@ -210,7 +210,16 @@ def get_place_descr(lat, lon):
                         if p in address:
                             addr.append(address[p])
 
-                    place_descr = ', '.join(addr)
+                    if len(addr) > 0:
+                        place_descr = ', '.join(addr)
+                        try:
+                            if hasattr(r, 'geosearch'):
+                                r.geoadd('nominatim', [lon, lat, place_descr])
+                            else:
+                                r.geoadd('nominatim', lon, lat, place_descr)
+                            logger.info(f"Cached point {place_descr} at ({lat:.6f},{lon:.6f})")
+                        except Exception as e:
+                            logger.error(f"Exception: {traceback.format_exc()}")
 
     except Exception as e:
         logger.error(f"Exception: {traceback.format_exc()}")
