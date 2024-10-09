@@ -226,12 +226,12 @@ def get_place_descr(lat, lon):
                     if len(address) > 0:
                         place_descr = get_descr_by_address(address)
                         try:
-                            address_json = json.dumps(address)
+                            address_json = json.dumps(address, indent=4, sort_keys=True, ensure_ascii=False)
                             if hasattr(r, 'geosearch'):
                                 r.geoadd('nominatim_address', [lon, lat, address_json])
                             else:
                                 r.geoadd('nominatim_address', lon, lat, address_json)
-                            logger.info(f"Save into L2 cache: {address_json} at ({lat:.6f},{lon:.6f})")
+                            logger.info(f"Save to L2 cache: {address_json} at ({lat:.6f},{lon:.6f})")
                         except Exception as e:
                             logger.error(f"Exception: {traceback.format_exc()}")
 
@@ -253,7 +253,7 @@ logger = init_logging()
 r = connect_redis()
 
 if __name__ == '__main__':
-    for p in [[55.755097, 37.618961]]: #, [59.855159, 30.350305], [59.423, 30.3459], [48.853, 2.294572], [59.992, 31.03]]:
+    for p in [[55.756098, 37.638963]]: #, [59.855159, 30.350305], [59.423, 30.3459], [48.853, 2.294572], [59.992, 31.03]]:
         #print(get_nominatim_data(p[0], p[1]))
         print(get_place_descr(p[0], p[1]))
 
