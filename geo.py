@@ -79,7 +79,7 @@ def get_nominatim_data(lat, lon):
         data_str = r.hget('nominatim_cache', key)
         if data_str is not None:
             data = json.loads(data_str)
-            logger.debug(f"cached: {data_str}")
+            logger.debug(f"Found in L1 cache: {data_str} at ({lat_str},{lon_str})")
         else:
             url = f'https://nominatim.openstreetmap.org/reverse?lat={lat_str}&lon={lon_str}&format=json&accept-language={language}&zoom={zoom}'
             logger.debug(f"{url=}")
@@ -89,8 +89,8 @@ def get_nominatim_data(lat, lon):
             status_code = req_res.status_code
             if status_code == 200:
                 data = req_res.json()
-                logger.info(f"nominatim: {data}")
                 if data is not None and r is not None:
+                    logger.info(f"Save to L1 cache: {data} at ({lat_str},{lon_str})")
                     r.hset('nominatim_cache', key, json.dumps(data))
             else:
                 eprint("Error {req_res}")
@@ -98,6 +98,32 @@ def get_nominatim_data(lat, lon):
         logger.error(f"Exception: {repr(e)}")
 
     return data
+
+
+def get_descr_by_address(address):
+    descr = ''
+    addr = []
+
+    logger.debug(f"{address=}")
+
+    if 'country_code' in address and 'country' in address and address['country_code'] != 'ru':
+        addr.append(address['country'])
+
+    for p in ['village', 'town', 'locality', 'municipality', 'county', 'state', 'city']:
+        if p in address:
+            addr.append(address[p])
+            break
+
+    for p in ['neighbourhood', 'residential', 'square', 'tourism', 'historic', 'shop', 'amenity']:
+        if p in address:
+            addr.append(address[p])
+
+    if len(addr) > 0:
+        descr = ', '.join(addr)
+
+    logger.debug(f"{descr=}")
+
+    return descr
 
 
 def set_place_descr(lat, lon, descr, radius = 100.0):
@@ -119,12 +145,13 @@ def get_place_descr(lat, lon):
     global r
     global logger
 
-    logger.debug(f"in get_place_descr({lat:.6f},{lon:.6f}")
+    logger.info(f">>>>>>> in get_place_descr({lat:.6f},{lon:.6f})")
 
     if r is None:
         return 'KeyDB ERROR'
 
     place_descr = ''
+    address = dict()
 
     #Шаг 1 - поиск ближайшей области, заданной пользователем, в радиус которой попадает точка
     try:
@@ -169,7 +196,7 @@ def get_place_descr(lat, lon):
         if place_descr is None or place_descr == '':
             if hasattr(r, 'geosearch'):
                 cached_res = r.geosearch(
-                    name='nominatim',
+                    name='nominatim_address',
                     longitude=lon,
                     latitude=lat,
                     radius=50,
@@ -177,11 +204,12 @@ def get_place_descr(lat, lon):
                     withdist=True,
                     sort='ASC')
             else:
-                cached_res = r.georadius('nominatim', lon, lat, 50, 'm', withdist=True, sort='ASC')
+                cached_res = r.georadius('nominatim_address', lon, lat, 50, 'm', withdist=True, sort='ASC')
 
             if cached_res is not None and len(cached_res) > 0:
-                logger.info(f"got from cache: {cached_res}")
-                place_descr = cached_res[0][0] + '.'
+                logger.info(f"Found in L2 cache: {cached_res}")
+                address = json.loads(cached_res[0][0])
+                place_descr = get_descr_by_address(address)
 
     except Exception as e:
         logger.error(f"Exception: {traceback.format_exc()}")
@@ -194,37 +222,23 @@ def get_place_descr(lat, lon):
             if nominatim_data is not None and isinstance(nominatim_data, dict):
                 if 'address' in nominatim_data:
                     address = nominatim_data['address']
-                    addr = []
 
-                    logger.debug(f"{address=}")
-
-                    if 'country_code' in address and 'country' in address and address['country_code'] != 'ru':
-                        addr.append(address['country'])
-
-                    for p in ['village', 'town', 'locality', 'municipality', 'county', 'state', 'city']:
-                        if p in address:
-                            addr.append(address[p])
-                            break
-
-                    for p in ['neighbourhood', 'residential', 'square', 'tourism', 'historic', 'shop', 'amenity']:
-                        if p in address:
-                            addr.append(address[p])
-
-                    if len(addr) > 0:
-                        place_descr = ', '.join(addr)
+                    if len(address) > 0:
+                        place_descr = get_descr_by_address(address)
                         try:
+                            address_json = json.dumps(address)
                             if hasattr(r, 'geosearch'):
-                                r.geoadd('nominatim', [lon, lat, place_descr])
+                                r.geoadd('nominatim_address', [lon, lat, address_json])
                             else:
-                                r.geoadd('nominatim', lon, lat, place_descr)
-                            logger.info(f"Cached point {place_descr} at ({lat:.6f},{lon:.6f})")
+                                r.geoadd('nominatim_address', lon, lat, address_json)
+                            logger.info(f"Save into L2 cache: {address_json} at ({lat:.6f},{lon:.6f})")
                         except Exception as e:
                             logger.error(f"Exception: {traceback.format_exc()}")
 
     except Exception as e:
         logger.error(f"Exception: {traceback.format_exc()}")
 
-    logger.info(f"({lat:.6f},{lon:.6f}) => {place_descr}")
+    logger.info(f"<<<<<< ({lat:.6f},{lon:.6f}) => {place_descr}")
     return place_descr
 
 
