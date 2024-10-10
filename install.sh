@@ -20,14 +20,13 @@ sudo ln -f -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 sudo localectl set-locale C.UTF-8
 
 export DEBIAN_FRONTEND=noninteractive
-sudo apt-get --yes update
-sudo apt-get --yes upgrade
-sudo apt-get --yes dist-upgrade
-
-#APT_OPTIONS="--allow-unauthenticated --allow-downgrades --allow-remove-essential --allow-change-held-packages"
 #sudo apt-get --yes update
-#sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
-#sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
+#sudo apt-get --yes upgrade
+#sudo apt-get --yes dist-upgrade
+APT_OPTIONS="--allow-unauthenticated --allow-downgrades --allow-remove-essential --allow-change-held-packages"
+sudo apt-get --yes update
+sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
+sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
 
 sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix python3-redis python3-requests
 
@@ -92,6 +91,10 @@ then
   done
 else
   echo "KeyDB is already installed"
+fi
+if [ ! -s /etc/keydb/keydb.conf ]
+then
+  sudo mv -f /etc/keydb/keydb.conf.dpkg-new /etc/keydb/keydb.conf
 fi
 
 sudo systemctl enable keydb-server
