@@ -106,6 +106,8 @@ def get_descr_by_address(address):
 
     logger.debug(f"{address=}")
 
+    country_short_name = {"us": "США", "ae": "ОАЭ"}
+
     for p, v in address.copy().items():
         if p in ['postcode'] or p.startswith('ISO') or re.match(r'^\[0-9]+$', v):
             del address[p]
@@ -118,13 +120,17 @@ def get_descr_by_address(address):
             del address[p]
             continue
 
-    if 'country_code' in address and 'country' in address and address['country_code'] != 'ru':
-        addr.append(address['country'])
+    if 'country_code' in address and address['country_code'] != 'ru':
+        if address['country_code'] in country_short_name:
+            logger.debug(f"{country_short_name=}")
+            addr.append(country_short_name[address['country_code']])
+        elif 'country' in address:
+            addr.append(address['country'])
 
     for p in ['state', 'city']:
         #if 'contry_code' in address and address['country_code'] in ['us'] and p == 'state':
         #    continue
-        if p in address and address[p] not in addr:
+        if p in address and address[p] not in addr and (len(addr) == 0 or address[p].lower() not in addr[0].lower()):
             addr.append(address[p])
 
     for p in ['village', 'town', 'locality', 'county']:
@@ -137,7 +143,7 @@ def get_descr_by_address(address):
     for p in ['road', 'hamlet',  'residential', 'square',
               'tourism', 'historic', 'shop', 'amenity', 'aeroway',
               'leisure', 'man_made', 'neighbourhood', 'railway']:
-        if p in address and address[p] not in addr and cur_len+len(address[p]) < 50:
+        if p in address and address[p] not in addr and cur_len+len(address[p]) < 60:
             addr.append(address[p])
 
     if len(addr) > 0:
@@ -320,6 +326,7 @@ if __name__ == '__main__':
             print(f"{p}: {json.dumps(all_p_v[p], sort_keys=True, ensure_ascii=False)}")
         print(f"{json.dumps(places, indent=4, sort_keys=True, ensure_ascii=False)}")
 
+    print(f"{get_place_descr(25.7633666666667, -80.1888416666667)}")
         #print(json.dumps(all_p_v, indent=4, sort_keys=True, ensure_ascii=False))
 
 
