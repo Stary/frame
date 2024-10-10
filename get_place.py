@@ -10,17 +10,17 @@ import geo
 path_to_file = sys.argv[1] if len(sys.argv) > 1 else ''
 
 #path_to_file = '/Users/sergey/Photo/icloud/20240922_160133.heic'
-#path_to_file = '/Users/sergey/Photo/ref/Тихая Ладога 1km.heic'
+#path_to_file = '/Users/sergey/Photo/poi/Маркиза.HEIC'
 
 if os.path.isfile(path_to_file):
     place_descr = ''
     place_radius = 1.0
     filename = os.path.basename(path_to_file)
-    m = re.match(r"(.*\S)[\s\_]*(\d+)(km|m)\.([a-z]+)", filename)
+    m = re.match(r"(.*?\D)[\s_]*(\d+)\s*(km|m)\.([a-z]+)", filename, flags=re.IGNORECASE)
     if m:
-        print(f"{m.group(0)}|{m.group(1)}|{m.group(2)}|{m.group(3)}|{m.group(4)}")
-        descr = m.group(1)
-        radius = float(m.group(2)) * (0.001 if m.group(3).lower() == 'm' else 1)
+        #print(f"{m.group(0)}|{m.group(1)}|{m.group(2)}|{m.group(3)}|{m.group(4)}")
+        place_descr = m.group(1)
+        place_radius = float(m.group(2)) * (0.001 if m.group(3).lower() == 'm' else 1)
     output=subprocess.run(['exiftool', '-n', path_to_file], stdout=subprocess.PIPE).stdout.decode('utf-8')
     exif = dict()
     for line in output.splitlines():
