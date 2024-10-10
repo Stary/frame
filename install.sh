@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 if [ "$EUID" -eq 0 ]
   then echo "Please do not run the script as root"
   exit
@@ -18,6 +17,34 @@ fi
 
 sudo ln -f -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 sudo localectl set-locale C.UTF-8
+
+sudo systemctl stop unattended-upgrades
+sudo apt-get -y purge unattended-upgrades update-manager
+sudo chmod -x /etc/update-motd.d/40-orangepi-updates
+sudo sed -i 's/Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades
+sudo apt-get --yes autoremove
+
+sudo systemctl stop apt-daily.timer
+sudo systemctl stop apt-daily-upgrade.timer
+sudo systemctl stop apt-daily.service
+sudo systemctl stop apt-daily-upgrade.service
+sudo systemctl disable apt-daily.timer
+sudo systemctl disable apt-daily-upgrade.timer
+sudo systemctl mask apt-daily.service
+sudo systemctl mask apt-daily-upgrade.service
+sudo systemctl stop update-notifier-download.timer
+sudo systemctl stop update-notifier-download.service
+sudo systemctl disable update-notifier-download.service
+sudo systemctl disable update-notifier-download.timer
+sudo systemctl mask update-notifier-download.service
+
+sudo systemctl daemon-reload
+sudo systemctl reset-failed
+sudo systemctl list-timers --all
+
+sudo sed -i 's/^DPkg/#DPkg/' /etc/apt/apt.conf.d/99update-notifier
+sudo sed -i 's/^APT/#APT/' /etc/apt/apt.conf.d/99update-notifier
+sudo sed -i -r 's/Unattended-Upgrade "[0-9]+"/Unattended-Upgrade "0"/' /etc/apt/apt.conf.d/02-orangepi-periodic
 
 export DEBIAN_FRONTEND=noninteractive
 #sudo apt-get --yes update
@@ -48,41 +75,12 @@ sudo systemctl stop cron
 sudo systemctl start cron
 
 
-sudo systemctl stop unattended-upgrades
-sudo apt-get -y purge unattended-upgrades update-manager
-sudo chmod -x /etc/update-motd.d/40-orangepi-updates
-sudo sed -i 's/Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades
-sudo apt-get --yes autoremove
-
-sudo systemctl stop apt-daily.timer
-sudo systemctl stop apt-daily-upgrade.timer
-sudo systemctl stop apt-daily.service
-sudo systemctl stop apt-daily-upgrade.service
-sudo systemctl disable apt-daily.timer
-sudo systemctl disable apt-daily-upgrade.timer
-sudo systemctl mask apt-daily.service
-sudo systemctl mask apt-daily-upgrade.service
-sudo systemctl stop update-notifier-download.timer
-sudo systemctl stop update-notifier-download.service
-sudo systemctl disable update-notifier-download.service
-sudo systemctl disable update-notifier-download.timer
-sudo systemctl mask update-notifier-download.service
-
-sudo systemctl daemon-reload
-sudo systemctl reset-failed
-sudo systemctl list-timers --all
-
-sudo sed -i 's/^DPkg/#DPkg/' /etc/apt/apt.conf.d/99update-notifier
-sudo sed -i 's/^APT/#APT/' /etc/apt/apt.conf.d/99update-notifier
-
-sudo sed -i -r 's/Unattended-Upgrade "[0-9]+"/Unattended-Upgrade "0"/' /etc/apt/apt.conf.d/02-orangepi-periodic
-
 keydb_installed=$(sudo dpkg -l keydb-server 2>/dev/null | wc -l)
 
 if [ "$keydb_installed" -eq 0 ]
 then
   BASE_URL=https://download.keydb.dev/pkg/open_source/deb/ubuntu22.04_jammy/arm64/keydb-latest/
-  for f in $(wget -O - $BASE_URL 2>&1 | grep -i 'href="keydb' | grep -v sentinel | sed 's/.*href=\"//i' | sed 's/\".*//')
+  for f in $(wget -O - $BASE_URL 2>&1 | grep -i 'href="keydb' | grep -v sentinel | sed 's/.*href=\"//i' | sed 's/\".*//' | sort -r)
   do
     echo "f=$f"
     wget -O /tmp/$f $BASE_URL/$f
