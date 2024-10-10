@@ -125,6 +125,8 @@ then
     PID=`pgrep find`
     if [ -z "$PID" ]
     then
+      echo "Обработка пользовательских POI"
+      find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' \;
       echo "Запуск в фоне автоповорота фотографий"
       find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
     else
@@ -143,11 +145,11 @@ then
       if [ ! -z "$f" ]
       then
 	#printf -var f "%q" $f
-	ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
+	      ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
       fi
     fi
     set -x
-    feh -q -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' --draw-tinted $IMAGES_DIR || exit -1 &
+    feh -q -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' --draw-tinted $IMAGES_DIR || exit 64 &
   fi
 else
   pkill feh
