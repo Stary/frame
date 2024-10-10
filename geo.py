@@ -106,17 +106,38 @@ def get_descr_by_address(address):
 
     logger.debug(f"{address=}")
 
+    for p, v in address.copy().items():
+        if p in ['postcode'] or p.startswith('ISO') or re.match(r'^\[0-9]+$', v):
+            del address[p]
+            continue
+
+        v2 = re.sub(r'[a-zA-Zа-яА-Я0-9\s\"\-]', '', v, flags=re.DOTALL | re.IGNORECASE)
+        v3 = re.sub(r'[^a-zA-Zа-яА-Я]', '', v, flags=re.DOTALL | re.IGNORECASE)
+
+        if len(v2) > 3 or (len(v3) < 4 and p not in ['country_code', 'postcode']):
+            del address[p]
+            continue
+
     if 'country_code' in address and 'country' in address and address['country_code'] != 'ru':
         addr.append(address['country'])
 
-    for p in ['village', 'town', 'locality', 'municipality', 'state', 'city', 'county']:
-        if p in address:
+    for p in ['state', 'city']:
+        #if 'contry_code' in address and address['country_code'] in ['us'] and p == 'state':
+        #    continue
+        if p in address and address[p] not in addr:
+            addr.append(address[p])
+
+    for p in ['village', 'town', 'locality', 'county']:
+        #municipality
+        if p in address and address[p] not in addr and len(addr)<2:
             addr.append(address[p])
             break
 
-    for p in ['road', 'hamlet', 'neighbourhood', 'residential', 'square',
-              'tourism', 'historic', 'shop', 'amenity', 'aeroway']:
-        if p in address:
+    cur_len = len(', '.join(addr))
+    for p in ['road', 'hamlet',  'residential', 'square',
+              'tourism', 'historic', 'shop', 'amenity', 'aeroway',
+              'leisure', 'man_made', 'neighbourhood', 'railway']:
+        if p in address and address[p] not in addr and cur_len+len(address[p]) < 50:
             addr.append(address[p])
 
     if len(addr) > 0:
@@ -257,6 +278,7 @@ r = connect_redis()
 
 if __name__ == '__main__':
     meta_file = os.path.join('/Users/sergey/Photo/icloud', 'photo.json')
+    places = dict()
     with open(meta_file) as json_file:
         meta = json.load(json_file)
         all_p = dict()
@@ -293,7 +315,14 @@ if __name__ == '__main__':
                         all_p_v[p][v] = 1
                     else:
                         all_p_v[p][v] += 1
-        print(json.dumps(all_p_v, indent=4, sort_keys=True, ensure_ascii=False))
+                places[f"{get_descr_by_address(meta[f]['address'])}"] = meta[f]['address']
+        for p in sorted(all_p_v):
+            print(f"{p}: {json.dumps(all_p_v[p], sort_keys=True, ensure_ascii=False)}")
+        print(f"{json.dumps(places, indent=4, sort_keys=True, ensure_ascii=False)}")
+
+        #print(json.dumps(all_p_v, indent=4, sort_keys=True, ensure_ascii=False))
+
+
     sys.exit(0)
 
     for p in [[55.756098, 37.638963]]: #, [59.855159, 30.350305], [59.423, 30.3459], [48.853, 2.294572], [59.992, 31.03]]:
