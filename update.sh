@@ -54,6 +54,7 @@ then
   if [ -s "$TMP_DEMO_ZIP" ]
   then
     unzip -d "$DEMO_DIR" $TMP_DEMO_ZIP
+    rm -f $TMP_DEMO_ZIP
   else
     rmdir "$DEMO_DIR"
   fi

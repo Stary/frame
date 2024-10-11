@@ -58,12 +58,21 @@ sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Op
 sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix python3-redis python3-requests
 
 sudo apt-get -y install libimlib2-dev libheif-dev pkg-config build-essential
-pushd ~
-git clone https://github.com/vi/imlib2-heic.git
-cd imlib2-heic/
-make
-sudo rsync -av heic.so `find /usr/lib -name 'loaders' | grep imlib`
-popd
+
+heic_loader_installed=$(find /usr/lib -name 'heic.so' | grep loaders | grep imlib | wc -l)
+if [ "$heic_loader_installed" -eq 0 ]
+then
+  pushd ~
+  git clone https://github.com/vi/imlib2-heic.git
+  cd imlib2-heic/
+  make
+  sudo rsync -av heic.so `find /usr/lib -name 'loaders' | grep imlib`
+  popd
+  rm -rf ~/imlib2-heic
+else
+  echo "heic imlib loader is already installed"
+fi
+
 
 sudo systemctl enable chrony
 sudo systemctl stop chrony
