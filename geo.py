@@ -191,12 +191,12 @@ def get_place_descr(lat, lon, raw=False):
                     name='user_places',
                     longitude=lon,
                     latitude=lat,
-                    radius=1000,
+                    radius=100,
                     unit='km',
                     withdist=True,
                     sort='ASC')
             else:
-                user_places = r.georadius('user_places', lon, lat, 1000, 'km', withdist=True, sort='ASC')
+                user_places = r.georadius('user_places', lon, lat, 100, 'km', withdist=True, sort='ASC')
 
             if len(user_places) > 0:
                 logger.debug(f"{user_places=}")
@@ -228,12 +228,12 @@ def get_place_descr(lat, lon, raw=False):
                     name='nominatim_address',
                     longitude=lon,
                     latitude=lat,
-                    radius=50,
+                    radius=20,
                     unit='m',
                     withdist=True,
                     sort='ASC')
             else:
-                cached_res = r.georadius('nominatim_address', lon, lat, 50, 'm', withdist=True, sort='ASC')
+                cached_res = r.georadius('nominatim_address', lon, lat, 20, 'm', withdist=True, sort='ASC')
 
             if cached_res is not None and len(cached_res) > 0:
                 logger.info(f"Found in L2 cache: {cached_res}")
