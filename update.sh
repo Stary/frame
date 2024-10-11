@@ -14,11 +14,14 @@ SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
 HOME_DIR=`eval echo ~$USER`
 MEDIA_DIR="$HOME_DIR/photo"
 DEMO_DIR="$HOME_DIR/demo"
+DEMO_ZIP="demo.zip"
+TMP_DEMO_ZIP="/tmp/$DEMO_ZIP"
 CONF_DIR="$HOME_DIR/.config/conky"
 BIN_DIR="$HOME_DIR/bin"
 LOG_DIR="/var/log/frame"
 SSH_DIR=$HOME/.ssh
 SSH_KEYS=$SSH_DIR/authorized_keys
+STATIC_BASE_URL="https://quietharbor.net/static/"
 
 CONF="conky.conf"
 FONT="UbuntuThin.ttf"
@@ -46,9 +49,17 @@ fi
 
 if [ ! -d "$DEMO_DIR" ]
 then
-  mkdir $DEMO_DIR
-  unzip -d $DEMO_DIR $SRC_DIR/demo.zip
+  mkdir -p "$DEMO_DIR"
+  wget -O $TMP_DEMO_ZIP "$STATIC_BASE_URL/$DEMO_ZIP"
+  if [ -s "$TMP_DEMO_ZIP" ]
+  then
+    unzip -d "$DEMO_DIR" $TMP_DEMO_ZIP
+  else
+    rmdir "$DEMO_DIR"
+  fi
 fi
+
+
 
 for d in $MEDIA_DIR $DEMO_DIR $CONF_DIR $BIN_DIR $LOG_DIR
 do
