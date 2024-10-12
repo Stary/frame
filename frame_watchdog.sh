@@ -125,8 +125,8 @@ then
     PID=`pgrep find`
     if [ -z "$PID" ]
     then
-      echo "Обработка пользовательских POI"
-      find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' \;
+      echo "Обработка в фоне пользовательских POI"
+      find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
       echo "Запуск в фоне автоповорота фотографий"
       find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
     else
