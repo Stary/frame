@@ -85,11 +85,16 @@ rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR
 
 
-(crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
+changed_files=$(find $BIN_DIR -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
 
-pkill conky
-pkill unclutter
-pkill feh
+if [ "$changed_files" -ne 0 ]
+then
 
-$BIN_DIR/$MAIN_SCRIPT
+  (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 
+  pkill conky
+  pkill unclutter
+  pkill feh
+
+  $BIN_DIR/$MAIN_SCRIPT
+fi
