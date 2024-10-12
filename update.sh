@@ -89,7 +89,7 @@ changed_files=$(find $BIN_DIR -mtime -1 -type f | grep -v .git | grep -v pycache
 
 if [ "$changed_files" -ne 0 ]
 then
-
+  echo "$changed_files file(s) were updated, so restarting the service"
   (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 
   pkill conky
