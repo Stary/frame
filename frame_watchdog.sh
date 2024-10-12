@@ -139,12 +139,12 @@ then
     ORDER_OPTIONS=('-z')
     if [ ! -z "$d" ]
     then
-      echo "Найдем самую раннюю фотографию за дату $d"
+      echo "Найдем самую раннюю фотографию за дату $d:"
       #f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1 | sed -E -e "s/^.*\///g"`
       f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1`
       if [ ! -z "$f" ]
       then
-	#printf -var f "%q" $f
+        echo "$f"
 	      ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
       fi
     fi
