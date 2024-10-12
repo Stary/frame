@@ -149,7 +149,7 @@ then
       fi
     fi
     set -x
-    feh -q -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' --draw-tinted $IMAGES_DIR || exit 64 &
+    feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' --draw-tinted $IMAGES_DIR >> /var/log/frame/feh.log 2>&1 &
   fi
 else
   pkill feh
