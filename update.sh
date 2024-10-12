@@ -32,7 +32,8 @@ PLACE_SCRIPT="get_place.py"
 LOG_FILE="frame.log"
 
 pushd $SRC_DIR
-git pull
+pull_result=$(git pull)
+echo "|$pull_result|$?|"
 popd
 
 if [ ! -d "$SSH_DIR" ]
