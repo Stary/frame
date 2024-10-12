@@ -15,6 +15,10 @@ then
   echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo EDITOR='tee -a' visudo
 fi
 
+gsettings set org.gnome.desktop.background picture-uri ""
+gsettings set org.gnome.desktop.background picture-uri-dark ""
+gsettings set org.gnome.desktop.background primary-color '#000000'
+
 sudo ln -f -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 sudo localectl set-locale C.UTF-8
 
