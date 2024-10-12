@@ -32,7 +32,7 @@ PLACE_SCRIPT="get_place.py"
 LOG_FILE="frame.log"
 
 pushd $SRC_DIR
-git_status=$(git_status)
+git_status=$(git status)
 echo "status: $git_status"
 pull_result=$(git pull)
 echo "|$pull_result|$?|"
