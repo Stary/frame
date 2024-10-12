@@ -23,7 +23,7 @@ def init_logging():
 
     log_file = os.path.join(LOG_DIR if os.path.isdir(LOG_DIR) else '.', 'geo.log')
     try:
-        fh = logging.handlers.RotatingFileHandler(log_file, maxBytes=1024*1024, backupCount=10)
+        fh = logging.handlers.RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=10)
         fh.setLevel(LOG_LEVEL)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
@@ -100,7 +100,97 @@ def get_nominatim_data(lat, lon):
     return data
 
 
-def get_descr_by_address(address):
+def get_descr_by_address(address, max_len=80):
+    logger.debug(f"{address=}")
+    country_short_name = {"us": "США", "ae": "ОАЭ"}
+    addr_prop_list = [['country',      100.0],
+                     ['region',         0.0],
+                     ['state',         10.0],
+                     ['state_district', 0.3],
+                     ['county',         1.0],
+                     ['province',       2.0],
+                     ['city',          50.0],
+                     ['city_block',     1.0],
+                     ['city_district',  0.5],
+                     ['quarter',        3.0],
+                     ['municipality',   0.5],
+                     ['neighbourhood',  1.0],
+                     ['suburb',         3.0],
+                     ['borough',       30.0],
+                     ['town',          30.0],
+                     ['village',       20.0],
+                     ['road',          20.0],
+                     ['building',       0.5],
+                     ['house_number',   1.0],
+                     ['residential',    5.0],
+                     ['amenity',        5.0],
+                     ['allotments',     1.0],
+                     ['aerialway',      1.0],
+                     ['aeroway',        1.0],
+                     ['railway',        1.0],
+                     ['commercial',     3.0],
+                     ['hamlet',         5.0],
+                     ['historic',      15.0],
+                     ['leisure',       60.0],
+                     ['man_made',      10.0],
+                     ['shop',           5.0],
+                     ['tourism',       80.0]]
+
+    result_v = list()
+    result_w = list()
+    result_l = list()
+
+    for addr_item, w in addr_prop_list:
+
+        if w <= 0:
+            continue
+
+        if addr_item in address:
+            v = address[addr_item]
+            v = re.sub(r'(городской округ|городское поселение|столица) ', '', v, flags=re.DOTALL | re.IGNORECASE)
+
+            if addr_item == 'country' and 'country_code' in address and address['country_code'] == 'ru':
+                continue
+
+            if re.match(r'^\[0-9]+$', v):
+                continue
+
+            v2 = re.sub(r'[a-zA-Zа-яА-Я0-9\s\"\-]', '', v, flags=re.DOTALL | re.IGNORECASE)
+            v3 = re.sub(r'[^a-zA-Zа-яА-Я]', '', v, flags=re.DOTALL | re.IGNORECASE)
+
+            if len(v2) > 3 or (len(v3) < 4 and addr_item not in ['country_code', 'postcode']):
+                continue
+
+            if addr_item == 'country' and 'country_code' in address and address['country_code'] in country_short_name:
+                v = country_short_name[address['country_code']]
+
+            result_v.append(v)
+            result_w.append(w)
+            result_l.append(len(v))
+
+    max_w = 0
+    best_mask = 0
+    for mask in range(2**len(result_v)):
+        l = 0
+        w = 0
+        for n in range(len(result_v)):
+            if mask & 2**n > 0:
+                w += result_w[n]
+                l += result_l[n]
+        if l < max_len and w > max_w:
+            best_mask = mask
+            max_w = w
+
+    descr_list = list()
+    for n in range(len(result_v)):
+        if best_mask & 2 ** n > 0 and result_v[n] not in descr_list:
+            descr_list.append(result_v[n])
+    descr = ', '.join(descr_list)
+    logger.debug(f"{descr=}")
+    return descr
+
+
+def get_descr_by_address2(address):
     descr = ''
     addr = []
 
@@ -283,6 +373,17 @@ logger = init_logging()
 r = connect_redis()
 
 if __name__ == '__main__':
+    test_addr = {
+    "country": "Россия",
+    "country_code": "ru",
+    "region": "Южный федеральный округ",
+    "road": "Рубежная улица",
+    "state": "Краснодарский край",
+    "tourism": "город-отель Бархатные сезоны - \"Екатерининский квартал\"",
+    "town": "городской округ Сириус"}
+    print(f"{get_descr_by_address(test_addr)}")
+    #sys.exit(0)
+
     meta_file = os.path.join('/Users/sergey/Photo/icloud', 'photo.json')
     places = dict()
     with open(meta_file) as json_file:
@@ -321,7 +422,7 @@ if __name__ == '__main__':
                         all_p_v[p][v] = 1
                     else:
                         all_p_v[p][v] += 1
-                places[f"{get_descr_by_address(meta[f]['address'])}"] = meta[f]['address']
+                places[f"{get_descr_by_address(meta[f]['address'], 50)}"] = meta[f]['address']
         for p in sorted(all_p_v):
             print(f"{p}: {json.dumps(all_p_v[p], sort_keys=True, ensure_ascii=False)}")
         print(f"{json.dumps(places, indent=4, sort_keys=True, ensure_ascii=False)}")
