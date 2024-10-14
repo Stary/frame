@@ -26,7 +26,7 @@ if os.path.isfile(path_to_file):
         try:
             output_str = output.decode('utf-8')
         except UnicodeDecodeError as e:
-            output_str = output.decode('ascii')
+            output_str = output.decode('latin-1')
         exif = dict()
         for line in output_str.splitlines():
             attr = re.split(r'\s*:\s+', line, maxsplit=1)
