@@ -27,11 +27,13 @@ DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
 IMAGES_DIR=''
 USER=`whoami`
 
-unclutter_running=$(pgrep -c unclutter)
+unclutter_running=$(pgrep unclutter)
 if [ -z "$unclutter_running" ]; then
   echo $unclutter_running
   pgrep unclutter
   unclutter -root 2>&1 >/dev/null &
+#else
+#  echo "unclutter's already running: $unclutter_running"
 fi
 
 ###################### Mount USB ####################
