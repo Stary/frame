@@ -60,7 +60,7 @@ sudo systemctl mask update-notifier-download.service
 
 sudo systemctl daemon-reload
 sudo systemctl reset-failed
-sudo systemctl list-timers --all
+#sudo systemctl list-timers --all
 
 sudo sed -i 's/^DPkg/#DPkg/' /etc/apt/apt.conf.d/99update-notifier
 sudo sed -i 's/^APT/#APT/' /etc/apt/apt.conf.d/99update-notifier
