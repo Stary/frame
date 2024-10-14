@@ -45,7 +45,7 @@ popd
 if [ ! -d "$SSH_DIR" ]
 then
   mkdir -p $SSH_DIR
-  chmo 700 $SSH_DIR
+  chmod 700 $SSH_DIR
 fi
 
 if [ ! -s "$SSH_KEYS" ]
