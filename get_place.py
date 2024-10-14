@@ -23,8 +23,12 @@ if os.path.isfile(path_to_file):
             place_descr = m.group(1)
             place_radius = float(m.group(2)) * (0.001 if m.group(3).lower() == 'm' else 1)
         output=subprocess.run(['exiftool', '-n', path_to_file], stdout=subprocess.PIPE).stdout #.decode('utf-8')
+        try:
+            output_str = output.decode('utf-8')
+        except UnicodeDecodeError as e:
+            output_str = output.decode('ascii')
         exif = dict()
-        for line in output.splitlines():
+        for line in output_str.splitlines():
             attr = re.split(r'\s*:\s+', line, maxsplit=1)
             if len(attr) == 2:
                 exif[attr[0]] = attr[1]
