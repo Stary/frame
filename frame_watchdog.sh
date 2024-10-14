@@ -149,7 +149,13 @@ then
       fi
     fi
     set -x
-    feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' --draw-tinted $IMAGES_DIR >> /var/log/frame/feh.log 2>&1 &
+    PID=$(pgrep feh)
+    if [ -z "$PID" ]
+    then
+      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' --draw-tinted $IMAGES_DIR >> /var/log/frame/feh.log 2>&1 &
+    else
+      echo "Feh уже успел запуститься"
+    fi
   fi
 else
   pkill feh
