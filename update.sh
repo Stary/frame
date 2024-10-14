@@ -9,7 +9,7 @@ if [ "$EUID" -eq 0 ]
   exit
 fi
 
-FORCE_UPDATE=$1
+OPTION=$1
 
 USER=`whoami`
 SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
@@ -87,15 +87,18 @@ fi
 rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR
 
-changed_files=$(find $BIN_DIR -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
+(crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $SRC_DIR/$UPDATE_SCRIPT norestart >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
+(crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 
-if [ "$changed_files" -ne 0 ] || [ "X$FORCE_UPDATE" != "X" ]
+if [ "X$OPTION" == "norestart" ]
+then
+  exit
+fi
+
+changed_files=$(find $BIN_DIR -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
+if [ "$changed_files" -ne 0 ] || [ "X$OPTION" == "Xforce" ]
 then
   echo "$changed_files file(s) were updated, so restarting the service"
-  (crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $SRC_DIR/$UPDATE_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
-  (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
-
-
   pkill conky
   pkill unclutter
   pkill feh
