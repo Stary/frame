@@ -13,6 +13,7 @@ SUDO_FILE="/etc/sudoers.d/$USER"
 if [ ! -s "$SUDO_FILE" ]
 then
   echo "$USER ALL=(ALL) NOPASSWD: ALL" > /tmp/sudo$USER
+  echo $USER | sudo -S chown root /tmp/sudo$USER
   echo $USER | sudo -S mv /tmp/sudo$USER $SUDO_FILE
 fi
 
