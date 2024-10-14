@@ -32,6 +32,7 @@ INFO_SCRIPT="get_info.sh"
 GEO_SCRIPT="geo.py"
 PLACE_SCRIPT="get_place.py"
 WALLPAPER_SCRIPT="set_wallpaper.sh"
+UPDATE_SCRIPT="update.sh"
 LOG_FILE="frame.log"
 
 pushd $SRC_DIR
@@ -91,7 +92,9 @@ changed_files=$(find $BIN_DIR -mtime -1 -type f | grep -v .git | grep -v pycache
 if [ "$changed_files" -ne 0 ] || [ "X$FORCE_UPDATE" != "X" ]
 then
   echo "$changed_files file(s) were updated, so restarting the service"
+  (crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $UPDATE_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
   (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
+
 
   pkill conky
   pkill unclutter
