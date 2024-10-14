@@ -29,6 +29,7 @@ MAIN_SCRIPT="frame_watchdog.sh"
 INFO_SCRIPT="get_info.sh"
 GEO_SCRIPT="geo.py"
 PLACE_SCRIPT="get_place.py"
+WALLPAPER_SCRIPT="set_wallpaper.sh"
 LOG_FILE="frame.log"
 
 pushd $SRC_DIR
@@ -63,8 +64,6 @@ then
   fi
 fi
 
-
-
 for d in $MEDIA_DIR $DEMO_DIR $CONF_DIR $BIN_DIR $LOG_DIR
 do
   echo $d
@@ -78,12 +77,12 @@ then
   rsync -av $SRC_DIR/$INFO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$PLACE_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$WALLPAPER_SCRIPT $BIN_DIR
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh
 fi
 rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR
-
 
 changed_files=$(find $BIN_DIR -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
 
@@ -95,6 +94,6 @@ then
   pkill conky
   pkill unclutter
   pkill feh
-
+  $BIN_DIR/$WALLPAPER_SCRIPT "$DEMO_DIR"
   $BIN_DIR/$MAIN_SCRIPT
 fi

@@ -7,7 +7,7 @@ fi
 
 USER=`whoami`
 SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
-BG_IMAGES_DIR=$HOME/bg
+#BG_IMAGES_DIR=$HOME/bg
 
 SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | wc -l`
 
@@ -19,25 +19,21 @@ fi
 #gsettings set org.gnome.desktop.background picture-uri ""
 #gsettings set org.gnome.desktop.background picture-uri-dark ""
 #gsettings set org.gnome.desktop.background primary-color '#000000'
-
-if [ ! -d "$BG_IMAGES_DIR" ]
-then
-  mkdir -p "$BG_IMAGES_DIR"
-  wget -O "$BG_IMAGES_DIR/bg.jpg" https://images8.alphacoders.com/137/1374345.jpg
-  wget -O "$BG_IMAGES_DIR/bg2.jpg" https://quietharbor.net/static/bg.jpg
-fi
-
-bgimage=$(find $BG_IMAGES_DIR -type f -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | shuf -n 1)
-
-if [ "$bgimage" != "" ]
-then
-  echo Changing background to $bgimage
-
-  for p in $(xfconf-query -c xfce4-desktop -l | grep -i last-image)
-  do
-    xfconf-query -c xfce4-desktop -p "$p" -s "$bgimage"
-  done
-fi
+#if [ ! -d "$BG_IMAGES_DIR" ]
+#then
+#  mkdir -p "$BG_IMAGES_DIR"
+#  wget -O "$BG_IMAGES_DIR/bg.jpg" https://images8.alphacoders.com/137/1374345.jpg
+#  wget -O "$BG_IMAGES_DIR/bg2.jpg" https://quietharbor.net/static/bg.jpg
+#fi
+#bgimage=$(find $BG_IMAGES_DIR -type f -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | shuf -n 1)
+#if [ "$bgimage" != "" ]
+#then
+#  echo Changing background to $bgimage
+#  for p in $(xfconf-query -c xfce4-desktop -l | grep -i last-image)
+#  do
+#    xfconf-query -c xfce4-desktop -p "$p" -s "$bgimage"
+#  done
+#fi
 
 sudo ln -f -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 sudo localectl set-locale C.UTF-8
