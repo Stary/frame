@@ -8,12 +8,12 @@ fi
 USER=`whoami`
 SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
 #BG_IMAGES_DIR=$HOME/bg
+SUDO_FILE="/etc/sudoers.d/$USER"
 
-SUDO_READY=`sudo cat /etc/sudoers | grep $USER | grep -E -e "NOPASSWD:\s*ALL" | wc -l`
-
-if [ "$SUDO_READY" -eq 0 ]
+if [ ! -s "$SUDO_FILE" ]
 then
-  echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo EDITOR='tee -a' visudo
+  echo "$USER ALL=(ALL) NOPASSWD: ALL" > /tmp/sudo$USER
+  echo $USER | sudo -S mv /tmp/sudo$USER $SUDO_FILE
 fi
 
 #gsettings set org.gnome.desktop.background picture-uri ""
@@ -126,6 +126,6 @@ fi
 
 sudo systemctl enable keydb-server
 sudo systemctl start keydb-server
-sudo systemctl status keydb-server
+sudo systemctl status keydb-server | tail -20
 
 $SRC_DIR/update.sh force
