@@ -87,7 +87,8 @@ fi
 rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR
 
-(crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $SRC_DIR/$UPDATE_SCRIPT norestart >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
+#(crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $SRC_DIR/$UPDATE_SCRIPT norestart >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
+(crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT) | crontab -
 (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 
 if [ "X$OPTION" == "norestart" ]
