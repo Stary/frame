@@ -27,6 +27,13 @@ DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
 IMAGES_DIR=''
 USER=`whoami`
 
+unclutter_running=$(pgrep -c unclutter)
+if [ -z "$unclutter_running" ]; then
+  echo $unclutter_running
+  pgrep unclutter
+  unclutter -root 2>&1 >/dev/null &
+fi
+
 ###################### Mount USB ####################
 
 sudo mkdir -p $USB_DIR
@@ -91,8 +98,6 @@ if (( $TIME >= $DAY && $TIME < $NIGHT ))
 then
 #  pkill dclock
   pkill conky
-  pkill unclutter
-
 
   PID=`pgrep exiftran`
   if [ ! -z "$PID" ]
@@ -169,7 +174,7 @@ else
     conky
 #    dclock -nobell -miltime -tails -noscroll -blink -nofade -noalarm -thickness 0.12 -slope 70.0 -bd "black" -bg "black" -fg "darkorange" -led_off "black" &
     sleep 2s
-    unclutter -root 2>&1 >/dev/null &
+    #unclutter -root 2>&1 >/dev/null &
   fi
   wmctrl -r conky -b add,fullscreen,above
 fi
