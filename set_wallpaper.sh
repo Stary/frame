@@ -31,12 +31,12 @@ if [ -z "$unclutter_running" ]; then
   unclutter -root 2>&1 >/dev/null &
 fi
 
-xfconf-query -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2
-xfconf-query -c xfce4-panel -p /panels/panel-1/background-style -s 1
-xfconf-query -c xfce4-panel -p /panels/panel-1/leave-opacity -s 100
+xfconf-query --create -t string -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2
+xfconf-query --create -t string -c xfce4-panel -p /panels/panel-1/background-style -s 1
+xfconf-query --create -t string -c xfce4-panel -p /panels/panel-1/leave-opacity -s 100
 
-xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-off -s 0
-xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-sleep -s 0
-xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/inactivity-on-ac -s 0
+xfconf-query --create -t string -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-off -s 0
+xfconf-query --create -t string -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-sleep -s 0
+xfconf-query --create -t string -c xfce4-power-manager -p /xfce4-power-manager/inactivity-on-ac -s 0
 
 

@@ -128,4 +128,4 @@ sudo systemctl enable keydb-server
 sudo systemctl start keydb-server
 sudo systemctl status keydb-server
 
-$SRC_DIR/update.sh
+$SRC_DIR/update.sh force

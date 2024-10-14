@@ -9,6 +9,8 @@ if [ "$EUID" -eq 0 ]
   exit
 fi
 
+FORCE_UPDATE=$1
+
 USER=`whoami`
 SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
 HOME_DIR=`eval echo ~$USER`
@@ -86,7 +88,7 @@ rsync -av $SRC_DIR/$FONT $CONF_DIR
 
 changed_files=$(find $BIN_DIR -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
 
-if [ "$changed_files" -ne 0 ]
+if [ "$changed_files" -ne 0 ] || [ "X$FORCE_UPDATE" != "X" ]
 then
   echo "$changed_files file(s) were updated, so restarting the service"
   (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
