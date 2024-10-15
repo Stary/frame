@@ -37,8 +37,8 @@ xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/leave-opacity -s
 xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/enter-opacity -s 0
 #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-rgba -s 0
 
-xfconf-query --create -t string -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-off -s 0
-xfconf-query --create -t string -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-sleep -s 0
-xfconf-query --create -t string -c xfce4-power-manager -p /xfce4-power-manager/inactivity-on-ac -s 0
+xfconf-query --create -t uint -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-off -s 0
+xfconf-query --create -t uint -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-sleep -s 0
+xfconf-query --create -t uint -c xfce4-power-manager -p /xfce4-power-manager/inactivity-on-ac -s 0
 
 
