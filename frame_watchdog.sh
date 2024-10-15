@@ -119,30 +119,40 @@ then
     do
       if [ -d "$d" ]
       then
-        cnt=$(find $d -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | wc -l)
-        if (( $cnt > 0))
+	TMP_PLAYLIST="/tmp/play.lst"
+        find $d -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' > $TMP_PLAYLIST
+        if [ -s "$TMP_PLAYLIST" ]
         then
           IMAGES_DIR=$d
           echo "Каталог с фото: $IMAGES_DIR"
+	  PLAYLIST="$IMAGES_DIR/play.lst"
+	  cat $TMP_PLAYLIST > $PLAYLIST
           break
         fi
       fi
     done
 
-    sudo chown -R $USER $IMAGES_DIR 2>/dev/null
-
-    PID=$(pgrep find)
-    if [ -z "$PID" ]
+    sudo chown -R $USER:$USER $IMAGES_DIR 2>/dev/null
+    ROTATELIST="$IMAGES_DIR/processed.lst"
+    touch $ROTATELIST
+    diff=$(diff $PLAYLIST $ROTATELIST)
+    if [ ! -z "$diff" ]
     then
-      echo "Обработка в фоне пользовательских POI"
-      find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
-      echo "Запуск в фоне автоповорота фотографий"
-      find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
-    else
-      echo "Автоповорот уже запущен, пропускаю"
+      PID=$(pgrep find)
+      if [ -z "$PID" ]
+      then
+        cat $PLAYLIST > $ROTATELIST
+        echo "Обработка в фоне пользовательских POI"
+        find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
+        echo "Запуск в фоне автоповорота фотографий"
+        find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
+      else
+        echo "Автоповорот уже запущен, пропускаю"
+      fi
     fi
 
-    d=`find $IMAGES_DIR -type f -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf | head -1`
+#    d=`find $IMAGES_DIR -type f -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf | head -1`
+    d=$(cat $PLAYLIST | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf | head -1)
 
     #По-умолчанию порядок просто случайный, переключаемся на последовательный со случайной точкой старта, если имена файлов содержат дату
     ORDER_OPTIONS=('-z')
@@ -150,18 +160,19 @@ then
     then
       echo "Найдем самую раннюю фотографию за дату $d:"
       #f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1 | sed -E -e "s/^.*\///g"`
-      f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1`
+      #f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1`
+      f=`cat $PLAYLIST | grep "$d" | sort | head -1`
       if [ ! -z "$f" ]
       then
-        echo "$f"
-	      ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
+        echo "Найден файл $f, начнем слайдшоу с него"
+	ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
       fi
     fi
     set -x
     PID=$(pgrep feh)
     if [ -z "$PID" ]
     then
-      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' --draw-tinted $IMAGES_DIR >> /var/log/frame/feh.log 2>&1 &
+      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
     else
       echo "Feh уже успел запуститься"
     fi
