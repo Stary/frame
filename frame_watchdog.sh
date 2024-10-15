@@ -7,6 +7,8 @@ DELAY=55.0
 RANDOM_ORDER=no
 CONFIG='frame.cfg'
 SLIDESHOW_DISPLAY=:0.0
+FONT_DIR=/usr/share/fonts/truetype/freefont/
+FONT='FreeMono/24'
 
 USB_DIR=/media/usb
 
@@ -32,6 +34,8 @@ NIGHT=$NIGHT
 DELAY=$DELAY
 RANDOM_ORDER=$RANDOM_ORDER
 SLIDESHOW_DISPLAY=$SLIDESHOW_DISPLAY
+FONT_DIR=$FONT_DIR
+FONT=$FONT
 " > $HOME/$CONFIG
 
 export DISPLAY=$SLIDESHOW_DISPLAY
@@ -187,7 +191,7 @@ then
     PID=$(pgrep feh)
     if [ -z "$PID" ]
     then
-      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C /usr/share/fonts/truetype/freefont/ -e "FreeMono/24" --info '~/bin/get_info.sh %F' --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
+      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info '~/bin/get_info.sh %F' --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
     else
       echo "Feh уже успел запуститься"
     fi

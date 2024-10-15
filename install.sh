@@ -129,4 +129,7 @@ sudo systemctl enable keydb-server
 sudo systemctl start keydb-server
 sudo systemctl status keydb-server | tail -20
 
+#sudo locale-gen 'C.UTF-8'
+#sudo dpkg-reconfigure locales
+
 $SRC_DIR/update.sh force
