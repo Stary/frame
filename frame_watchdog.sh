@@ -31,7 +31,7 @@ unclutter_running=$(pgrep unclutter)
 if [ -z "$unclutter_running" ]; then
   echo $unclutter_running
   pgrep unclutter
-  unclutter -root 2>&1 >/dev/null &
+  unclutter -root >/dev/null 2>&1 &
 #else
 #  echo "unclutter's already running: $unclutter_running"
 fi
@@ -45,14 +45,16 @@ test_file='asDF4)SF4mADf.dat'
 sudo touch $USB_DIR/$test_file || sudo umount $USB_DIR
 sudo rm -f $USB_DIR/$test_file
 
-for name in `find /dev -name 'sd*1'`
+for name in $(find /dev -name 'sd*1')
 do
-  n=`mount | grep $name | wc -l`
+  n=$(mount | grep $name | wc -l)
   if [ $n -eq 0 ]
   then
     echo "Found external partition $name"
-    if sudo mount $name $USB_DIR; then
-      for f in `find  $USB_DIR -name '*.txt' -size -256 | grep -i wifi`
+    sudo chown $USER:$USER $USB_DIR
+    sudo chmod 777 $USB_DIR
+    if sudo mount $name $USB_DIR -o umask=000,user; then
+      for f in $(find  $USB_DIR -name '*.txt' -size -256 | grep -i wifi)
       do
         echo $f
         dos2unix $f
@@ -86,9 +88,9 @@ done
 #####################################################
 
 shopt -s extglob
-TIME=`date +%H%M | sed 's/^0\{1,3\}//'`
+TIME=$(date +%H%M | sed 's/^0\{1,3\}//')
 
-NTP=`chronyc tracking | grep -i status | grep -i normal | wc -l`
+NTP=$(chronyc tracking | grep -i status | grep -i normal | wc -l)
 
 if (( $NTP == 0 ))
 then
@@ -101,14 +103,14 @@ then
 #  pkill dclock
   pkill conky
 
-  PID=`pgrep exiftran`
+  PID=$(pgrep exiftran)
   if [ ! -z "$PID" ]
   then
     echo "Exiftran is running, exiting"
     exit 0
   fi
 
-  PID=`pgrep feh`
+  PID=$(pgrep feh)
   if [ -z "$PID" ]
   then
     date
@@ -117,7 +119,7 @@ then
     do
       if [ -d "$d" ]
       then
-        cnt=`find $d -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | wc -l`
+        cnt=$(find $d -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | wc -l)
         if (( $cnt > 0))
         then
           IMAGES_DIR=$d
@@ -129,7 +131,7 @@ then
 
     sudo chown -R $USER $IMAGES_DIR 2>/dev/null
 
-    PID=`pgrep find`
+    PID=$(pgrep find)
     if [ -z "$PID" ]
     then
       echo "Обработка в фоне пользовательских POI"
@@ -167,7 +169,7 @@ then
 else
   pkill feh
 #  PID=`pgrep dclock`
-  PID=`pgrep conky`
+  PID=$(pgrep conky)
   if [ -z "$PID" ]
   then
     date
