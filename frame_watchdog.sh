@@ -1,23 +1,12 @@
 #!/bin/bash
 
+#Значения по-умолчанию, переопределяются значениями из файла frame.cfg в домашней папке пользователя либо в корне флэшки
 DAY=800
 NIGHT=2400
 DELAY=55.0
-
+RANDOM_ORDER=no
 CONFIG='frame.cfg'
-
-if [ -s "$HOME/$CONFIG" ]
-then
-  source $HOME/$CONFIG
-fi
-echo "#Frame configuration
-DAY=$DAY
-NIGHT=$NIGHT
-DELAY=$DELAY
-" > $HOME/$CONFIG
-
-export DISPLAY=:0.0
-export XAUTHORITY=~/.Xauthority
+SLIDESHOW_DISPLAY=:0.0
 
 USB_DIR=/media/usb
 
@@ -26,6 +15,27 @@ DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
 #DIRS="$HOME/demo2"
 IMAGES_DIR=''
 USER=`whoami`
+
+if [ -s "$HOME/$CONFIG" ]
+then
+  source "$HOME/$CONFIG"
+fi
+
+if [ -s "$USB_DIR/$CONFIG" ]
+then
+  source "$USB_DIR/$CONFIG"
+fi
+
+echo "#Frame configuration
+DAY=$DAY
+NIGHT=$NIGHT
+DELAY=$DELAY
+RANDOM_ORDER=$RANDOM_ORDER
+SLIDESHOW_DISPLAY=$SLIDESHOW_DISPLAY
+" > $HOME/$CONFIG
+
+export DISPLAY=$SLIDESHOW_DISPLAY
+export XAUTHORITY=~/.Xauthority
 
 unclutter_running=$(pgrep unclutter)
 if [ -z "$unclutter_running" ]; then
@@ -151,22 +161,27 @@ then
       fi
     fi
 
-#    d=`find $IMAGES_DIR -type f -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf | head -1`
-    d=$(cat $PLAYLIST | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf | head -1)
-
-    #По-умолчанию порядок просто случайный, переключаемся на последовательный со случайной точкой старта, если имена файлов содержат дату
+    #По-умолчанию порядок случайный
     ORDER_OPTIONS=('-z')
-    if [ ! -z "$d" ]
+    if [ "X$RANDOM_ORDER" == "Xno" ]
     then
-      echo "Найдем самую раннюю фотографию за дату $d:"
-      #f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1 | sed -E -e "s/^.*\///g"`
-      #f=`find $IMAGES_DIR -type f -size +100k -name "$d*" | sort | head -1`
-      f=`cat $PLAYLIST | grep "$d" | sort | head -1`
-      if [ ! -z "$f" ]
+      #Если пользователь отключил случайный порядок, отсортируем файлы по имени
+      echo "Задан последовательный порядок воспроизведения, отсортируем файлы по имени"
+      ORDER_OPTIONS=('-S')
+      d=$(cat $PLAYLIST | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf | head -1)
+      if [ ! -z "$d" ]
       then
-        echo "Найден файл $f, начнем слайдшоу с него"
-	ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
+        echo "Найдем самую раннюю фотографию за дату $d:"
+        f=`cat $PLAYLIST | grep "$d" | sort | head -1`
+	#Если файлы имеют в имени дату - найдем случайный день и сдвинем начало презентации на первый файл от этого дня
+        if [ ! -z "$f" ]
+        then
+          echo "Найден файл $f, начнем слайдшоу с него"
+	  ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
+        fi
       fi
+    else
+      echo "Пользователь задал случайный порядок отображения: $RANDOM_ORDER"
     fi
     set -x
     PID=$(pgrep feh)
