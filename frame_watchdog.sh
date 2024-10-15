@@ -38,8 +38,13 @@ FONT_DIR=$FONT_DIR
 FONT=$FONT
 " > $HOME/$CONFIG
 
+if [ -s "$USB_DIR/$CONFIG" ]
+then
+  cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
+fi
+
 export DISPLAY=$SLIDESHOW_DISPLAY
-export XAUTHORITY=~/.Xauthority
+#export XAUTHORITY=~/.Xauthority
 
 unclutter_running=$(pgrep unclutter)
 if [ -z "$unclutter_running" ]; then
@@ -133,14 +138,14 @@ then
     do
       if [ -d "$d" ]
       then
-	TMP_PLAYLIST="/tmp/play.lst"
+        TMP_PLAYLIST="/tmp/play.lst"
         find $d -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' > $TMP_PLAYLIST
         if [ -s "$TMP_PLAYLIST" ]
         then
           IMAGES_DIR=$d
           echo "Каталог с фото: $IMAGES_DIR"
-	  PLAYLIST="$IMAGES_DIR/play.lst"
-	  cat $TMP_PLAYLIST > $PLAYLIST
+          PLAYLIST="$IMAGES_DIR/play.lst"
+          cat $TMP_PLAYLIST > $PLAYLIST
           break
         fi
       fi
@@ -177,11 +182,11 @@ then
       then
         echo "Найдем самую раннюю фотографию за дату $d:"
         f=`cat $PLAYLIST | grep "$d" | sort | head -1`
-	#Если файлы имеют в имени дату - найдем случайный день и сдвинем начало презентации на первый файл от этого дня
+        #Если файлы имеют в имени дату - найдем случайный день и сдвинем начало презентации на первый файл от этого дня
         if [ ! -z "$f" ]
         then
           echo "Найден файл $f, начнем слайдшоу с него"
-	  ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
+          ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
         fi
       fi
     else
