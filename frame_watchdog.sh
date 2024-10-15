@@ -53,7 +53,7 @@ do
     echo "Found external partition $name"
     sudo chown $USER:$USER $USB_DIR
     sudo chmod 777 $USB_DIR
-    if sudo mount $name $USB_DIR -o umask=000,user; then
+    if sudo mount $name $USB_DIR -o umask=000,user,utf8; then
       for f in $(find  $USB_DIR -name '*.txt' -size -256 | grep -i wifi)
       do
         echo $f
