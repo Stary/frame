@@ -24,33 +24,6 @@ DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
 IMAGES_DIR=''
 USER=`whoami`
 
-if [ -s "$HOME/$CONFIG" ]
-then
-  source "$HOME/$CONFIG"
-fi
-
-if [ -s "$USB_DIR/$CONFIG" ]
-then
-  source "$USB_DIR/$CONFIG"
-fi
-
-echo "#Frame configuration
-DAY=$DAY
-NIGHT=$NIGHT
-DELAY=$DELAY
-RANDOM_ORDER=$RANDOM_ORDER
-SLIDESHOW_DISPLAY=$SLIDESHOW_DISPLAY
-FONT_DIR=$FONT_DIR
-FONT=$FONT
-" > $HOME/$CONFIG
-
-if [ -s "$USB_DIR/$CONFIG" ]
-then
-  cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
-fi
-
-export DISPLAY=$SLIDESHOW_DISPLAY
-#export XAUTHORITY=~/.Xauthority
 
 unclutter_running=$(pgrep unclutter)
 if [ -z "$unclutter_running" ]; then
@@ -111,6 +84,37 @@ do
 #    echo "Partition $name is already mounted"
   fi
 done
+
+
+
+########### Loading external config ##################
+if [ -s "$HOME/$CONFIG" ]
+then
+  source "$HOME/$CONFIG"
+fi
+
+if [ -s "$USB_DIR/$CONFIG" ]
+then
+  source "$USB_DIR/$CONFIG"
+fi
+
+echo "#Frame configuration
+DAY=$DAY
+NIGHT=$NIGHT
+DELAY=$DELAY
+RANDOM_ORDER=$RANDOM_ORDER
+SLIDESHOW_DISPLAY=$SLIDESHOW_DISPLAY
+FONT_DIR=$FONT_DIR
+FONT=$FONT
+" > $HOME/$CONFIG
+
+if [ -s "$USB_DIR/$CONFIG" ]
+then
+  cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
+fi
+
+export DISPLAY=$SLIDESHOW_DISPLAY
+#export XAUTHORITY=~/.Xauthority
 
 #####################################################
 
@@ -185,19 +189,22 @@ then
       #Если пользователь отключил случайный порядок, отсортируем файлы по имени
       echo "Задан последовательный порядок воспроизведения, отсортируем файлы по имени"
       ORDER_OPTIONS=('-S')
-      d=$(cat $PLAYLIST | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf | head -1)
-      if [ ! -z "$d" ]
+      d=$(cat $PLAYLIST | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf -n 1)
+      if [ -n "$d" ]
       then
-        echo "Найдем самую раннюю фотографию за дату $d:"
-        f=`cat $PLAYLIST | grep "$d" | sort | head -1`
         #Если файлы имеют в имени дату - найдем случайный день и сдвинем начало презентации на первый файл от этого дня
-        if [ ! -z "$f" ]
-        then
-          echo "Найден файл $f, начнем слайдшоу с него"
-          ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
-        fi
+        echo "Найдем самую раннюю фотографию за дату $d:"
+        f=$(cat $PLAYLIST | grep "$d" | sort | head -1)
+      else
+        echo "Возьмем в качестве начального случайный файл из плейлиста"
+        f=$(cat $PLAYLIST | shuf -n 1)
       fi
-    else
+      if [ -n "$f" ]
+      then
+        echo "Начнем слайдшоу с файла $f"
+        ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
+      fi
+  else
       echo "Пользователь задал случайный порядок отображения: $RANDOM_ORDER"
     fi
     set -x
