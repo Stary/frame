@@ -41,6 +41,6 @@ xfconf-query --create -t uint -c xfce4-power-manager -p /xfce4-power-manager/dpm
 xfconf-query --create -t uint -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-sleep -s 0
 xfconf-query --create -t uint -c xfce4-power-manager -p /xfce4-power-manager/inactivity-on-ac -s 0
 
-xfconf-query --create -t int  -c -c xfce4-desktop -p /desktop-icons/style -s 0
+xfconf-query --create -t int  -c xfce4-desktop -p /desktop-icons/style -s 0
 
 
