@@ -19,22 +19,10 @@ FONT='FreeMono/24'
 USB_DIR=/media/usb
 
 DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
-#DIRS="$HOME/test"
-#DIRS="$HOME/demo2"
 IMAGES_DIR=''
 USER=`whoami`
 
-
-unclutter_running=$(pgrep unclutter)
-if [ -z "$unclutter_running" ]; then
-  echo $unclutter_running
-  pgrep unclutter
-  unclutter -root >/dev/null 2>&1 &
-#else
-#  echo "unclutter's already running: $unclutter_running"
-fi
-
-###################### Mount USB ####################
+##################### Mount USB ####################
 
 sudo mkdir -p $USB_DIR
 
@@ -48,7 +36,7 @@ do
   n=$(mount | grep $name | wc -l)
   if [ $n -eq 0 ]
   then
-    echo "Found external partition $name"
+    echo "Найден внешний раздел $name"
     sudo chown $USER:$USER $USB_DIR
     sudo chmod 777 $USB_DIR
     if sudo mount $name $USB_DIR -o umask=000,user,utf8; then
@@ -80,12 +68,8 @@ do
       done
     fi
     pkill feh
-#  else
-#    echo "Partition $name is already mounted"
   fi
 done
-
-
 
 ########### Loading external config ##################
 if [ -s "$HOME/$CONFIG" ]
@@ -114,7 +98,11 @@ then
 fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
-#export XAUTHORITY=~/.Xauthority
+
+unclutter_running=$(pgrep unclutter)
+if [ -z "$unclutter_running" ]; then
+  unclutter -root >/dev/null 2>&1 &
+fi
 
 #####################################################
 
