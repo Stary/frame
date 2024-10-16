@@ -73,13 +73,15 @@ do
     sudo chown $USER:$USER $USB_DIR
     sudo chmod 777 $USB_DIR
     if sudo mount $name $USB_DIR -o umask=000,user,utf8; then
-      for f in $(find  $USB_DIR -name '*.txt' -size -256 | grep -i wifi)
+      for f in $(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi\.(cfg|txt)')
       do
+        tmp_wifi_config=/tmp/wifi.cfg
         echo $f
-        dos2unix $f
+        cat $f > $tmp_wifi_config
+        dos2unix $tmp_wifi_config
         wifi_ssid=""
         wifi_password=""
-        for line in `head -10 $f`
+        for line in $(head -10 $tmp_wifi_config)
         do
           if [ $line != '' ]; then
             echo $line
