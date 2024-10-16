@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#Проверим, чтобы не был запущен другой экземпляр скрипта
+if pidof -o %PPID -x -- "$0" >/dev/null; then
+  printf >&2 '%s\n' "ERROR: Script $0 already running"
+  exit 1
+fi
+
 #Значения по-умолчанию, переопределяются значениями из файла frame.cfg в домашней папке пользователя либо в корне флэшки
 DAY=800
 NIGHT=2400
@@ -73,7 +79,7 @@ do
     sudo chown $USER:$USER $USB_DIR
     sudo chmod 777 $USB_DIR
     if sudo mount $name $USB_DIR -o umask=000,user,utf8; then
-      for f in $(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi\.(cfg|txt)')
+      for f in $(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)')
       do
         tmp_wifi_config=/tmp/wifi.cfg
         echo $f
