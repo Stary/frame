@@ -15,6 +15,7 @@ CONFIG='frame.cfg'
 SLIDESHOW_DISPLAY=:0.0
 FONT_DIR=/usr/share/fonts/truetype/freefont/
 FONT='FreeMono/24'
+GEO_MAX_LEN=60
 
 USB_DIR=/media/usb
 
@@ -90,6 +91,7 @@ RANDOM_ORDER=$RANDOM_ORDER
 SLIDESHOW_DISPLAY=$SLIDESHOW_DISPLAY
 FONT_DIR=$FONT_DIR
 FONT=$FONT
+GEO_MAX_LEN=$GEO_MAX_LEN
 " > $HOME/$CONFIG
 
 
@@ -165,7 +167,7 @@ then
       then
         cat $PLAYLIST > $ROTATELIST
         echo "Обработка в фоне пользовательских POI"
-        find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
+        find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' $GEO_MAX_LEN \; >/dev/null 2>&1 &
         echo "Запуск в фоне автоповорота фотографий"
         find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
       else

@@ -263,7 +263,7 @@ def set_place_descr(lat, lon, descr, radius = 100.0):
             logger.error(f"Exception: {traceback.format_exc()}")
 
 
-def get_place_descr(lat, lon, raw=False):
+def get_place_descr(lat, lon, raw=False, max_len = 80):
     global r
     global logger
 
@@ -332,7 +332,7 @@ def get_place_descr(lat, lon, raw=False):
             if cached_res is not None and len(cached_res) > 0:
                 logger.info(f"Found in L2 cache: {cached_res}")
                 address = json.loads(cached_res[0][0])
-                place_descr = get_descr_by_address(address)
+                place_descr = get_descr_by_address(address, max_len=max_len)
 
     except Exception as e:
         logger.error(f"Exception: {traceback.format_exc()}")

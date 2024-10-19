@@ -8,6 +8,12 @@ import re
 import geo
 
 path_to_file = sys.argv[1] if len(sys.argv) > 1 else ''
+max_len = 80
+if len(sys.argv) > 2:
+    try:
+        max_len = str(sys.argv[2])
+    except TypeError:
+        print(f"Error in max len option {sys.argv[2]}, set to {max_len}")
 
 #path_to_file = '/Users/sergey/Photo/icloud/20240922_160133.heic'
 #path_to_file = '/Users/sergey/Photo/poi/Маркиза.HEIC'
@@ -39,7 +45,7 @@ if os.path.isfile(path_to_file):
                 if place_descr is not None and place_descr != '':
                     geo.set_place_descr(latitude, longitude, place_descr, place_radius)
                 else:
-                    place_descr = geo.get_place_descr(latitude, longitude)
+                    place_descr = geo.get_place_descr(latitude, longitude, max_len=max_len)
                 print(f"{place_descr}")
             except ValueError:
                 pass
