@@ -167,7 +167,7 @@ then
       then
         cat $PLAYLIST > $ROTATELIST
         echo "Обработка в фоне пользовательских POI"
-        find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' $GEO_MAX_LEN \; >/dev/null 2>&1 &
+        find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
         echo "Запуск в фоне автоповорота фотографий"
         find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
       else
@@ -204,7 +204,7 @@ then
     PID=$(pgrep feh)
     if [ -z "$PID" ]
     then
-      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info '~/bin/get_info.sh %F' --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
+      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
     else
       echo "Feh уже успел запуститься"
     fi
