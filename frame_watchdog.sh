@@ -92,10 +92,6 @@ FONT_DIR=$FONT_DIR
 FONT=$FONT
 " > $HOME/$CONFIG
 
-if [ -s "$USB_DIR/$CONFIG" ]
-then
-  cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
-fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
 
@@ -152,6 +148,12 @@ then
     done
 
     sudo chown -R $USER:$USER $IMAGES_DIR 2>/dev/null
+
+    if [ "$IMAGES_DIR" == "$USB_DIR/$CONFIG" ]
+    then
+      cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
+    fi
+
     ROTATELIST="$IMAGES_DIR/processed.lst"
     touch $ROTATELIST
     diff=$(diff $PLAYLIST $ROTATELIST)
