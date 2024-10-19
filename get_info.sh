@@ -1,6 +1,7 @@
 #!/bin/bash
 
 f=$1
+max_len=$2
 
 ts=''
 
@@ -22,7 +23,7 @@ then
   ts=$(date --date "$ts" +'%a %d %B %Y %R' 2>/dev/null)
 fi
 
-place=$(~/bin/get_place.py "$f")
+place=$(~/bin/get_place.py "$f" "$max_len")
 
 if [ -n "$ts" ]
 then
