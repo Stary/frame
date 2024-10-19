@@ -377,6 +377,10 @@ logger = init_logging()
 r = connect_redis()
 
 if __name__ == '__main__':
+
+    print(f"{get_place_descr(35.307072, 25.405711, max_len=600)}")
+    sys.exit(0)
+
     test_addr = {
     "country": "Россия",
     "country_code": "ru",
@@ -431,7 +435,8 @@ if __name__ == '__main__':
             print(f"{p}: {json.dumps(all_p_v[p], sort_keys=True, ensure_ascii=False)}")
         print(f"{json.dumps(places, indent=4, sort_keys=True, ensure_ascii=False)}")
 
-    print(f"{get_place_descr(25.7633666666667, -80.1888416666667)}")
+
+    #    print(f"{get_place_descr(25.7633666666667, -80.1888416666667)}")
         #print(json.dumps(all_p_v, indent=4, sort_keys=True, ensure_ascii=False))
 
 
