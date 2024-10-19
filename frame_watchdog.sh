@@ -149,8 +149,9 @@ then
 
     sudo chown -R $USER:$USER $IMAGES_DIR 2>/dev/null
 
-    if [ "$IMAGES_DIR" == "$USB_DIR/$CONFIG" ]
+    if [ "$IMAGES_DIR" == "$USB_DIR" ]
     then
+      echo "Copy $HOME/$CONFIG to $USB_DIR/$CONFIG"
       cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
     fi
 
