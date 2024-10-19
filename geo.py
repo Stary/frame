@@ -267,7 +267,7 @@ def get_place_descr(lat, lon, raw=False, max_len = 80):
     global r
     global logger
 
-    logger.info(f">>>>>>> in get_place_descr({lat:.6f},{lon:.6f})")
+    logger.info(f">>>>>>> in get_place_descr({lat:.6f},{lon:.6f}, {max_len=})")
 
     if r is None:
         return 'KeyDB ERROR'
