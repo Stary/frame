@@ -96,6 +96,13 @@ then
   exit
 fi
 
+if [ -f /var/run/reboot-required ]; then
+  echo 'Reboot required. Restarting in 10 seconds'
+  sleep 10
+  sudo reboot
+fi
+
+
 changed_files=$(find $BIN_DIR -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
 if [ "$changed_files" -ne 0 ] || [ "X$OPTION" == "Xforce" ]
 then

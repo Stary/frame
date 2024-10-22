@@ -107,6 +107,8 @@ else
   echo "heic imlib loader is already installed"
 fi
 
+sudo apt-get -y remove python3-update-manager update-manager-core
+
 
 sudo systemctl enable chrony
 sudo systemctl stop chrony
