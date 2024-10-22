@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+#./install.sh 2>&1 | tee  ~/install.$(date +'%Y%m%d_%H%M%S').log
+
 if [ "$EUID" -eq 0 ]
   then echo "Please do not run the script as root"
   exit
@@ -9,6 +12,13 @@ USER=`whoami`
 SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
 #BG_IMAGES_DIR=$HOME/bg
 SUDO_FILE="/etc/sudoers.d/$USER"
+RELEASE=$(lsb_release -c | sed 's/.*\:\s*//')
+
+
+echo "+============================+"
+echo "|   Advanced Photo Frame 1.0 |"
+echo "+============================+"
+
 
 if [ ! -s "$SUDO_FILE" ]
 then
@@ -76,7 +86,10 @@ sudo apt-get --yes update
 sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 sudo apt-get --yes $APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
 
-sudo apt-get -y install feh conky unclutter wmctrl exiftran exif exifprobe exiftool dos2unix python3-redis python3-requests
+sudo apt-get -y install feh
+#package conky moved to conky-all in Ubuntu 22.04 noble
+sudo apt-get -y install conky || sudo apt-get -y install conky-all
+sudo apt-get -y install unclutter wmctrl exiftran exif exifprobe exiftool dos2unix python3-redis python3-requests
 
 sudo apt-get -y install libimlib2-dev libheif-dev pkg-config build-essential
 
@@ -106,6 +119,19 @@ sudo systemctl start cron
 
 
 keydb_installed=$(sudo dpkg -l keydb-server 2>/dev/null | wc -l)
+if [ "$keydb_installed" -ne 0 ]
+then
+  sudo systemctl enable keydb-server
+  sudo systemctl start keydb-server
+  keydb_running=$(pgrep keydb-server)
+  if [ -z "$keydb_running" ]
+  then
+    sudo systemctl status keydb-server | tail -20
+    echo "Something wrong with KeyDB, let's try to reinstall it"
+    sudo dpkg -P keydb-server
+    keydb_installed=0
+  fi
+fi
 
 if [ "$keydb_installed" -eq 0 ]
 then
@@ -131,5 +157,19 @@ sudo systemctl status keydb-server | tail -20
 
 #sudo locale-gen 'C.UTF-8'
 #sudo dpkg-reconfigure locales
+
+
+ssh=$(pgrep sshd)
+
+if [ -z "$ssh" ]
+then
+  sudo apt -y remove ssh
+  sudo rm -f /etc/ssh/ssh_host*
+  sudo apt -y install ssh
+  sudo dpkg-reconfigure openssh-server
+  sudo systemctl enable ssh
+  sudo systemctl start ssh
+  sudo systemctl status ssh
+fi
 
 $SRC_DIR/update.sh force
