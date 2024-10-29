@@ -11,11 +11,12 @@ DAY=800
 NIGHT=2400
 DELAY=55.0
 RANDOM_ORDER=no
-CONFIG='frame.cfg'
+CONFIG=frame.cfg
 SLIDESHOW_DISPLAY=:0.0
 FONT_DIR=/usr/share/fonts/truetype/freefont/
-FONT='FreeMono/24'
+FONT=FreeMono/24
 GEO_MAX_LEN=60
+TIMEZONE=Moscow
 
 USB_DIR=/media/usb
 
@@ -92,6 +93,7 @@ SLIDESHOW_DISPLAY=$SLIDESHOW_DISPLAY
 FONT_DIR=$FONT_DIR
 FONT=$FONT
 GEO_MAX_LEN=$GEO_MAX_LEN
+TIMEZONE=$TIMEZONE
 " > $HOME/$CONFIG
 
 
@@ -113,7 +115,18 @@ if (( $NTP == 0 ))
 then
   echo "Синхронизация с NTP не работает, включаем принудительный дневной режим"
   TIME=$DAY
+else
+  TZFILE_NEW=$(find /usr/share/zoneinfo -type f | grep -i "$TIMEZONE" | sort | head -1)
+  TZFILE_CUR=$(readlink /etc/localtime)
+  if [ -s "$TZFILE_NEW" ] && [ "X$TZFILE_NEW" != "X$TZFILE_CUR" ]
+  then
+    echo "Часовой пояс: $TIMEZONE, меняем $TZFILE_CUR на $TZFILE_NEW"
+    sudo ln -f -s $TZFILE_NEW /etc/localtime
+    date
+  fi
 fi
+
+
 
 if (( $TIME >= $DAY && $TIME < $NIGHT ))
 then
