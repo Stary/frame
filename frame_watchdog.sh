@@ -96,8 +96,48 @@ GEO_MAX_LEN=$GEO_MAX_LEN
 TIMEZONE=$TIMEZONE
 " > $HOME/$CONFIG
 
-
 export DISPLAY=$SLIDESHOW_DISPLAY
+
+############## Check screen orientation #############
+
+x_hw=$(xrandr --current | grep '*' | awk '{print $1}' | cut -d 'x' -f1)
+y_hw=$(xrandr --current | grep '*' | awk '{print $1}' | cut -d 'x' -f2)
+x_cur=$(xdpyinfo | awk '/dimensions/{print $2}' | cut -d 'x' -f1)
+y_cur=$(xdpyinfo | awk '/dimensions/{print $2}' | cut -d 'x' -f2)
+
+cur_orientation=$(xrandr | grep connected | awk '{print $5}')
+if [ "X$cur_orientation" == "X(normal" ]
+then
+  cur_orientation=normal
+fi
+
+if [ "X$SCREEN_ORIENTATION" == "Xleft" ] || [ "X$SCREEN_ORIENTATION" == "Xright" ] || [ "X$SCREEN_ORIENTATION" == "Xnormal" ]
+then
+  target_orientation=$SCREEN_ORIENTATION
+elif [ "X$SCREEN_ORIENTATION" == "Xauto" ]
+then
+  if [ "$x_hw" -lt "$y_hw" ]
+  then
+#    echo "Set target orientation to right"
+    target_orientation=right
+  fi
+else
+#  echo "'$SCREEN_ORIENTATION' is not known, set equal to current orientation: $cur_orientation"
+  target_orientation=$cur_orientation
+fi
+
+#echo "HW: $x_hw x $y_hw, Cur: $x_cur x $y_cur, orientation: $cur_orientation, target: $target_orientation"
+
+if [ "X$cur_orientation" != "X$target_orientation" ]
+then
+  echo "Changing orientation from $cur_orientation to $target_orientation"
+  pkill feh
+  pkill conky
+  pkill unclutter
+  xrandr -o $target_orientation
+fi
+
+#####################################################
 
 unclutter_running=$(pgrep unclutter)
 if [ -z "$unclutter_running" ]; then
