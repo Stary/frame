@@ -33,6 +33,7 @@ GEO_SCRIPT="geo.py"
 PLACE_SCRIPT="get_place.py"
 WALLPAPER_SCRIPT="set_wallpaper.sh"
 UPDATE_SCRIPT="update.sh"
+CHANGES_FILE="changes.txt"
 LOG_FILE="frame.log"
 
 pushd $SRC_DIR
@@ -81,6 +82,7 @@ then
   rsync -av $SRC_DIR/$PLACE_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$WALLPAPER_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$CHANGES_FILE $BIN_DIR
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh
 fi

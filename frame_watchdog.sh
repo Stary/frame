@@ -19,6 +19,8 @@ SCREEN_ORIENTATION=auto
 SCHEDULE=05:00-CLOCK,07:00-FRAME,22:00-CLOCK,23:30-OFF
 
 USB_DIR=/media/usb
+BIN_DIR=$HOME/bin
+
 
 DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
 IMAGES_DIR=''
@@ -67,6 +69,7 @@ do
             fi
           fi
         done
+        rsync -av $BIN_DIR/changes.txt $USB_DIR
       done
     fi
     pkill feh
