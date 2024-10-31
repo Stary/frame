@@ -7,8 +7,6 @@ if pidof -o %PPID -x -- "$0" >/dev/null; then
 fi
 
 #Значения по-умолчанию, переопределяются значениями из файла frame.cfg в домашней папке пользователя либо в корне флэшки
-DAY=800
-NIGHT=2400
 DELAY=55.0
 RANDOM_ORDER=no
 CONFIG=frame.cfg
@@ -18,6 +16,7 @@ FONT=FreeMono/24
 GEO_MAX_LEN=60
 TIMEZONE=Moscow
 SCREEN_ORIENTATION=auto
+SCHEDULE=05:00-CLOCK,07:00-FRAME,22:00-CLOCK,23:30-OFF
 
 USB_DIR=/media/usb
 
@@ -85,68 +84,51 @@ then
   source "$USB_DIR/$CONFIG"
 fi
 
-echo "#Frame configuration
-DAY=$DAY
-NIGHT=$NIGHT
+echo "################################
+#Frame configuration
+################################
+
+
+#Интервал между фотографиями в слайдшоу, в секундах
 DELAY=$DELAY
+
+#Порядок смены слайдов. yes - случайный, no - сортировка по имени файла, но со случайным начальным файлом
 RANDOM_ORDER=$RANDOM_ORDER
+
+#Актуально только для многомониторных инсталляций, по-умолчанию значение :0
 SLIDESHOW_DISPLAY=$SLIDESHOW_DISPLAY
+
+
+#Настройки вывода информации о текущем слайде - время съемки и описание гео-точки 
+#Путь к папке со шрифтами
 FONT_DIR=$FONT_DIR
+#Название и размер шрифта
 FONT=$FONT
+#Максимальная длина описания гео-точки в символах
 GEO_MAX_LEN=$GEO_MAX_LEN
+
+#Таймзона - можно указать название города (Kaliningrad,Moscow) или часовой пояс (GMT+3)
 TIMEZONE=$TIMEZONE
+
+#Ориентация экрана - normal (соответствует аппаратному положению матрицу), left, right, auto (приведение к горизонтальному)
 SCREEN_ORIENTATION=$SCREEN_ORIENTATION
+
+#Расписание задается как множество пар время-режим через запятую
+#время в формате 23:59, режим - FRAME (слайдшоу), CLOCK (часы) или OFF (выключенный экран)
+#Например,
+#SCHEDULE=23:00-OFF,5:00-CLOCK,8:00-FRAME,22:00-CLOCK
+SCHEDULE=$SCHEDULE
 " > $HOME/$CONFIG
 
+
 export DISPLAY=$SLIDESHOW_DISPLAY
-
-############## Check screen orientation #############
-
-x_hw=$(xrandr --current | grep '*' | awk '{print $1}' | cut -d 'x' -f1)
-y_hw=$(xrandr --current | grep '*' | awk '{print $1}' | cut -d 'x' -f2)
-x_cur=$(xdpyinfo | awk '/dimensions/{print $2}' | cut -d 'x' -f1)
-y_cur=$(xdpyinfo | awk '/dimensions/{print $2}' | cut -d 'x' -f2)
-
-cur_orientation=$(xrandr | grep connected | awk '{print $5}')
-if [ "X$cur_orientation" == "X(normal" ]
-then
-  cur_orientation=normal
-fi
-
-if [ "X$SCREEN_ORIENTATION" == "Xleft" ] || [ "X$SCREEN_ORIENTATION" == "Xright" ] || [ "X$SCREEN_ORIENTATION" == "Xnormal" ]
-then
-  target_orientation=$SCREEN_ORIENTATION
-elif [ "X$SCREEN_ORIENTATION" == "Xauto" ]
-then
-  if [ "$x_hw" -lt "$y_hw" ]
-  then
-#    echo "Set target orientation to right"
-    target_orientation=right
-  fi
-else
-#  echo "'$SCREEN_ORIENTATION' is not known, set equal to current orientation: $cur_orientation"
-  target_orientation=$cur_orientation
-fi
-
-#echo "HW: $x_hw x $y_hw, Cur: $x_cur x $y_cur, orientation: $cur_orientation, target: $target_orientation"
-
-if [ "X$cur_orientation" != "X$target_orientation" ]
-then
-  echo "Changing orientation from $cur_orientation to $target_orientation"
-  pkill feh
-  pkill conky
-  pkill unclutter
-  xrandr -o $target_orientation
-fi
-
-#####################################################
 
 unclutter_running=$(pgrep unclutter)
 if [ -z "$unclutter_running" ]; then
   unclutter -root >/dev/null 2>&1 &
 fi
 
-#####################################################
+############################################################################################
 
 shopt -s extglob
 TIME=$(date +%H%M | sed 's/^0\{1,3\}//')
@@ -169,10 +151,46 @@ else
 fi
 
 
+#############  Определение текущего режима ################################################
 
-if (( $TIME >= $DAY && $TIME < $NIGHT ))
+sorted=$(for interval in $(echo "$SCHEDULE" | sed 's/,/ /g'); do
+  IFS='-' read -r hm mode <<< "$interval"
+  seconds=$(( 1000000 + $(date -d "$hm" +%s) - $(date -d "00:00" +%s) ))
+  echo "$seconds-$mode-$hm"
+done | sort -r)
+
+if [ "X$TEST_HM" != "X" ]
 then
-#  pkill dclock
+  now=$(( 1000000 + $(date -d "$TEST_HM" +%s) - $(date -d "00:00" +%s) ))
+else
+  now=$(( 1000000 + $(date +%s) - $(date -d "00:00" +%s) ))
+fi
+
+target_mode=""
+
+for time_mode in $sorted; do
+  IFS='-' read -r time mode hm <<< $time_mode
+  #echo "now='$now' time='$time' mode='$mode' hm='$hm'"
+  if [ "X$target_mode" == "X" ]
+  then
+    target_mode=$mode
+  fi
+  if [ "$time" -le "$now" ]
+  then
+    target_mode=$mode
+    break
+  fi
+done
+
+if [ "X$target_mode" == "X" ]
+then
+  target_mode='FRAME'
+fi
+
+
+
+case "$target_mode" in
+FRAME)
   pkill conky
 
   PID=$(pgrep exiftran)
@@ -186,7 +204,8 @@ then
   if [ -z "$PID" ]
   then
     date
-    echo "Переход в дневной режим - запуск рамки"
+    echo "Переход в режим рамки"
+    xset dpms force on
     for d in $DIRS
     do
       if [ -d "$d" ]
@@ -264,20 +283,27 @@ then
       echo "Feh уже успел запуститься"
     fi
   fi
-else
+  ;;
+CLOCK)
   pkill feh
 #  PID=`pgrep dclock`
   PID=$(pgrep conky)
   if [ -z "$PID" ]
   then
     date
-    echo "Переход в ночной режим - запуск часов"
-    #Конфигурация часов сохранена в файле /home/pi/.config/conky/conky.conf
+    echo "Переход в режим часов"
+    #Конфигурация часов сохранена в файле ~/.config/conky/conky.conf
     conky
 #    dclock -nobell -miltime -tails -noscroll -blink -nofade -noalarm -thickness 0.12 -slope 70.0 -bd "black" -bg "black" -fg "darkorange" -led_off "black" &
     sleep 2s
-    #unclutter -root 2>&1 >/dev/null &
   fi
   wmctrl -r conky -b add,fullscreen,above
-fi
+  xset dpms force on
+  ;;
+OFF)
+  xset dpms force off
+  ;;
+*)
+  echo "Unknown mode '$target_mode'"
+esac
 
