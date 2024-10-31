@@ -83,6 +83,7 @@ then
   rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$WALLPAPER_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$CHANGES_FILE $BIN_DIR
+  unix2dos $BIN_DIR/$CHANGES_FILE
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh
 fi
