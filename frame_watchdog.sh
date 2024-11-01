@@ -122,6 +122,16 @@ SCREEN_ORIENTATION=$SCREEN_ORIENTATION
 SCHEDULE=$SCHEDULE
 " > $HOME/$CONFIG
 
+if [ -s "$USB_DIR/$CONFIG" ]
+then
+  diff=$(diff $HOME/$CONFIG $USB_DIR/$CONFIG)
+  if [ -n "$diff" ]
+  then
+    echo "Copy $HOME/$CONFIG to $USB_DIR/$CONFIG"
+    cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
+  fi
+fi
+
 export DISPLAY=$SLIDESHOW_DISPLAY
 
 unclutter_running=$(pgrep unclutter)
@@ -225,12 +235,6 @@ FRAME)
     done
 
     sudo chown -R $USER:$USER $IMAGES_DIR 2>/dev/null
-
-    if [ "$IMAGES_DIR" == "$USB_DIR" ]
-    then
-      echo "Copy $HOME/$CONFIG to $USB_DIR/$CONFIG"
-      cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
-    fi
 
     ROTATELIST="$IMAGES_DIR/processed.lst"
     touch $ROTATELIST

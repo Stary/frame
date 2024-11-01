@@ -18,15 +18,16 @@ MEDIA_DIR="$HOME_DIR/photo"
 DEMO_DIR="$HOME_DIR/demo"
 DEMO_ZIP="demo.zip"
 TMP_DEMO_ZIP="/tmp/$DEMO_ZIP"
-CONF_DIR="$HOME_DIR/.config/conky"
+CONKY_CONF_DIR="$HOME_DIR/.config/conky"
 BIN_DIR="$HOME_DIR/bin"
 LOG_DIR="/var/log/frame"
 SSH_DIR=$HOME/.ssh
+USB_DIR="/media/usb"
 SSH_KEYS=$SSH_DIR/authorized_keys
 STATIC_BASE_URL="https://quietharbor.net/static/"
 
-CONF="conky.conf"
-FONT="UbuntuThin.ttf"
+CONKY_CONF="conky.conf"
+CONKY_FONT="UbuntuThin.ttf"
 MAIN_SCRIPT="frame_watchdog.sh"
 INFO_SCRIPT="get_info.sh"
 GEO_SCRIPT="geo.py"
@@ -71,7 +72,7 @@ then
   fi
 fi
 
-for d in $MEDIA_DIR $DEMO_DIR $CONF_DIR $BIN_DIR $LOG_DIR
+for d in $MEDIA_DIR $DEMO_DIR $CONKY_CONF_DIR $BIN_DIR $LOG_DIR
 do
   echo $d
   sudo mkdir -p $d
@@ -90,11 +91,16 @@ then
   sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$MAIN_SCRIPT
   iconv -f UTF-8 -t WINDOWS-1251 -o $BIN_DIR/$CHANGES_WIN_FILE $BIN_DIR/$CHANGES_FILE
   unix2dos $BIN_DIR/$CHANGES_WIN_FILE
+  if [ -s $USB_DIR/$CHANGES_FILE ]
+  then
+    rsync -av $BIN_DIR/$CHANGES_FILE $USB_DIR
+    rsync -av $BIN_DIR/$CHANGES_WIN_FILE $USB_DIR
+  fi
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh
 fi
-rsync -av $SRC_DIR/$CONF $CONF_DIR
-rsync -av $SRC_DIR/$FONT $CONF_DIR
+rsync -av $SRC_DIR/$CONKY_CONF $CONKY_CONF_DIR
+rsync -av $SRC_DIR/$CONKY_FONT $CONKY_CONF_DIR
 
 
 #(crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $SRC_DIR/$UPDATE_SCRIPT norestart >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
