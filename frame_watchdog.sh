@@ -28,6 +28,7 @@ USER=`whoami`
 ##################### Mount USB ####################
 
 sudo mkdir -p $USB_DIR
+USB_READY=0
 
 test_file='asDF4)SF4mADf.dat'
 
@@ -43,6 +44,7 @@ do
     sudo chown $USER:$USER $USB_DIR
     sudo chmod 777 $USB_DIR
     if sudo mount $name $USB_DIR -o umask=000,user,utf8; then
+      USB_READY=1
       for f in $(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)')
       do
         tmp_wifi_config=/tmp/wifi.cfg
@@ -84,6 +86,7 @@ fi
 if [ -s "$USB_DIR/$CONFIG" ]
 then
   source "$USB_DIR/$CONFIG"
+  USB_READY=1
 fi
 
 echo "################################
@@ -122,14 +125,15 @@ SCREEN_ORIENTATION=$SCREEN_ORIENTATION
 SCHEDULE=$SCHEDULE
 " > $HOME/$CONFIG
 
-if [ -s "$USB_DIR/$CONFIG" ]
+if [ "$USB_READY" -gt "0" ]
 then
-  diff=$(diff $HOME/$CONFIG $USB_DIR/$CONFIG)
+  diff=$(diff $HOME/$CONFIG $USB_DIR/$CONFIG 2>&1)
   if [ -n "$diff" ]
   then
     echo "Copy $HOME/$CONFIG to $USB_DIR/$CONFIG"
     cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
   fi
+  rsync -av $BIN_DIR/changes* $USB_DIR
 fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
