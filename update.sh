@@ -107,7 +107,7 @@ rsync -av $SRC_DIR/$CONKY_FONT $CONKY_CONF_DIR
 (crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT) | crontab -
 (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 
-if [ "X$OPTION" == "norestart" ]
+if [ "X$OPTION" == "Xnorestart" ]
 then
   exit
 fi
@@ -119,7 +119,7 @@ if [ -f /var/run/reboot-required ]; then
 fi
 
 
-changed_files=$(find $BIN_DIR -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
+changed_files=$(find "$BIN_DIR" -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
 if [ "$changed_files" -ne 0 ] || [ "X$OPTION" == "Xforce" ]
 then
   echo "$changed_files file(s) were updated, so restarting the service"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$DISPLAY" == "" ]; then
+if [ "X$DISPLAY" == "X" ]; then
   export DISPLAY=:0
 fi
 
@@ -12,7 +12,7 @@ fi
 
 if [ "$bgimage" != "" ] && [ -s "$bgimage" ]
 then
-  echo Changing background to $bgimage
+  echo Changing background to "$bgimage"
 
   for p in $(xfconf-query -c xfce4-desktop -l | grep -i last-image)
   do
