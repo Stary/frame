@@ -33,6 +33,7 @@ GEO_SCRIPT="geo.py"
 PLACE_SCRIPT="get_place.py"
 WALLPAPER_SCRIPT="set_wallpaper.sh"
 UPDATE_SCRIPT="update.sh"
+VERSION_SCRIPT="get_version.sh"
 CHANGES_FILE="changes.txt"
 CHANGES_WIN_FIE="changes.win.txt"
 LOG_FILE="frame.log"
@@ -91,6 +92,8 @@ then
 fi
 rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR
+
+VERSION=$($SRC_DIR/$VERSION_SCRIPT)
 
 #(crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $SRC_DIR/$UPDATE_SCRIPT norestart >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 (crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT) | crontab -

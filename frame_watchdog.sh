@@ -21,7 +21,6 @@ SCHEDULE=05:00-CLOCK,07:00-FRAME,22:00-CLOCK,23:30-OFF
 USB_DIR=/media/usb
 BIN_DIR=$HOME/bin
 
-
 DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
 IMAGES_DIR=''
 USER=`whoami`
@@ -91,6 +90,7 @@ echo "################################
 #Frame configuration
 ################################
 
+VERSION=_VERSION_
 
 #Интервал между фотографиями в слайдшоу, в секундах
 DELAY=$DELAY
@@ -100,7 +100,6 @@ RANDOM_ORDER=$RANDOM_ORDER
 
 #Актуально только для многомониторных инсталляций, по-умолчанию значение :0
 SLIDESHOW_DISPLAY=$SLIDESHOW_DISPLAY
-
 
 #Настройки вывода информации о текущем слайде - время съемки и описание гео-точки 
 #Путь к папке со шрифтами
@@ -122,7 +121,6 @@ SCREEN_ORIENTATION=$SCREEN_ORIENTATION
 #SCHEDULE=23:00-OFF,5:00-CLOCK,8:00-FRAME,22:00-CLOCK
 SCHEDULE=$SCHEDULE
 " > $HOME/$CONFIG
-
 
 export DISPLAY=$SLIDESHOW_DISPLAY
 
