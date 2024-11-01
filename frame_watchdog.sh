@@ -28,7 +28,6 @@ USER=`whoami`
 ##################### Mount USB ####################
 
 sudo mkdir -p $USB_DIR
-USB_READY=0
 
 test_file='asDF4)SF4mADf.dat'
 
@@ -77,6 +76,8 @@ do
   fi
 done
 
+USB_READY=$(mount | grep -c $USB_DIR)
+
 ########### Loading external config ##################
 if [ -s "$HOME/$CONFIG" ]
 then
@@ -86,7 +87,6 @@ fi
 if [ -s "$USB_DIR/$CONFIG" ]
 then
   source "$USB_DIR/$CONFIG"
-  USB_READY=1
 fi
 
 echo "################################
