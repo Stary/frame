@@ -378,8 +378,8 @@ r = connect_redis()
 
 if __name__ == '__main__':
 
-    print(f"{get_place_descr(35.307072, 25.405711, max_len=600)}")
-    sys.exit(0)
+    #print(f"{get_place_descr(30, 25, max_len=600)}")
+    #sys.exit(0)
 
     test_addr = {
     "country": "Россия",
@@ -389,8 +389,8 @@ if __name__ == '__main__':
     "state": "Краснодарский край",
     "tourism": "город-отель Бархатные сезоны - \"Екатерининский квартал\"",
     "town": "городской округ Сириус"}
-    print(f"{get_descr_by_address(test_addr)}")
-    #sys.exit(0)
+    print(f"{get_descr_by_address(test_addr, 600)}")
+    sys.exit(0)
 
     meta_file = os.path.join('/Users/sergey/Photo/icloud', 'photo.json')
     places = dict()
