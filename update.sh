@@ -34,6 +34,7 @@ PLACE_SCRIPT="get_place.py"
 WALLPAPER_SCRIPT="set_wallpaper.sh"
 UPDATE_SCRIPT="update.sh"
 CHANGES_FILE="changes.txt"
+CHANGES_WIN_FIE="changes.win.txt"
 LOG_FILE="frame.log"
 
 pushd $SRC_DIR
@@ -83,7 +84,8 @@ then
   rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$WALLPAPER_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$CHANGES_FILE $BIN_DIR
-  unix2dos $BIN_DIR/$CHANGES_FILE
+  iconv -f UTF-8 -t WINDOWNS-1251 -o $BIN_DIR/$CHANGES_WIN_FILE $BIN_DIR/$CHANGES_FILE
+  unix2dos $BIN_DIR/$CHANGES_WIN_FILE
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh
 fi
