@@ -88,7 +88,7 @@ then
   rsync -av $SRC_DIR/$CHANGES_FILE $BIN_DIR
   sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$CHANGES_FILE 
   sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$MAIN_SCRIPT
-  iconv -f UTF-8 -t WINDOWNS-1251 -o $BIN_DIR/$CHANGES_WIN_FILE $BIN_DIR/$CHANGES_FILE
+  iconv -f UTF-8 -t WINDOWS-1251 -o $BIN_DIR/$CHANGES_WIN_FILE $BIN_DIR/$CHANGES_FILE
   unix2dos $BIN_DIR/$CHANGES_WIN_FILE
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh
