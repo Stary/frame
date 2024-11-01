@@ -1,13 +1,13 @@
 #!/bin/bash
 
-set -v
-
 #bash <(curl -s https://raw.githubusercontent.com/Stary/frame/refs/heads/main/install.sh)
 
 if [ "$EUID" -eq 0 ]
   then echo "Please do not run the script as root"
   exit
 fi
+
+set -v 
 
 OPTION=$1
 
@@ -43,6 +43,7 @@ git_status=$(git status)
 echo "status: $git_status"
 pull_result=$(git pull)
 echo "|$pull_result|$?|"
+VERSION=$($SRC_DIR/$VERSION_SCRIPT)
 popd
 
 if [ ! -d "$SSH_DIR" ]
@@ -85,6 +86,8 @@ then
   rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$WALLPAPER_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$CHANGES_FILE $BIN_DIR
+  sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$CHANGES_FILE 
+  sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$MAIN_SCRIPT
   iconv -f UTF-8 -t WINDOWNS-1251 -o $BIN_DIR/$CHANGES_WIN_FILE $BIN_DIR/$CHANGES_FILE
   unix2dos $BIN_DIR/$CHANGES_WIN_FILE
   #remove outdated script
@@ -93,7 +96,6 @@ fi
 rsync -av $SRC_DIR/$CONF $CONF_DIR
 rsync -av $SRC_DIR/$FONT $CONF_DIR
 
-VERSION=$($SRC_DIR/$VERSION_SCRIPT)
 
 #(crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $SRC_DIR/$UPDATE_SCRIPT norestart >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 (crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT) | crontab -
@@ -121,3 +123,4 @@ then
   $BIN_DIR/$WALLPAPER_SCRIPT "$DEMO_DIR"
   $BIN_DIR/$MAIN_SCRIPT
 fi
+
