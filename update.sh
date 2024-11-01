@@ -35,7 +35,7 @@ WALLPAPER_SCRIPT="set_wallpaper.sh"
 UPDATE_SCRIPT="update.sh"
 VERSION_SCRIPT="get_version.sh"
 CHANGES_FILE="changes.txt"
-CHANGES_WIN_FIE="changes.win.txt"
+CHANGES_WIN_FILE="changes.win.txt"
 LOG_FILE="frame.log"
 
 pushd $SRC_DIR
