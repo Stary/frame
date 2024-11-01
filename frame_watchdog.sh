@@ -133,7 +133,11 @@ then
     echo "Copy $HOME/$CONFIG to $USB_DIR/$CONFIG"
     cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
   fi
-  rsync -av $BIN_DIR/changes* $USB_DIR
+  diff2=$(diff $HOME/changes.txt $USB_DIR/changes.txt 2>&1)
+  if [ -n "$diff2" ]
+  then
+    cp -f $BIN_DIR/changes* $USB_DIR
+  fi
 fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
