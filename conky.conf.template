@@ -35,13 +35,13 @@ override_utf8_locale=true,
 
 default_color='FFFFFF',
 color0='CE7E00',
-color1='C8320A',
+color1='_CLOCK_COLOR_',
 }
 
 conky.text = [[
-${font UbuntuThin:size=560}${color1}\
+${font UbuntuThin:size=_CLOCK_SIZE_}${color1}\
 $alignr\
-${voffset 320}\
-${offset 40}\
+${voffset _CLOCK_VOFFSET_}\
+${offset _CLOCK_OFFSET_}\
 ${time %H:%M}\
 ]]

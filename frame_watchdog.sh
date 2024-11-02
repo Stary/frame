@@ -18,8 +18,15 @@ TIMEZONE=Moscow
 SCREEN_ORIENTATION=auto
 SCHEDULE=05:00-CLOCK,07:00-FRAME,22:00-CLOCK,23:30-OFF
 
+CLOCK_COLOR=C8320A
+CLOCK_SIZE=560
+CLOCK_OFFSET=40
+CLOCK_VOFFSET=320
+
 USB_DIR=/media/usb
 BIN_DIR=$HOME/bin
+CONKY_CONF=$HOME/.config/conky/conky.conf
+CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
 
 DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
 IMAGES_DIR=''
@@ -118,6 +125,12 @@ TIMEZONE=$TIMEZONE
 #Ориентация экрана - normal (соответствует аппаратному положению матрицу), left, right, auto (приведение к горизонтальному)
 SCREEN_ORIENTATION=$SCREEN_ORIENTATION
 
+#Конфигурация часов
+CLOCK_COLOR=$CLOCK_COLOR
+CLOCK_SIZE=$CLOCK_SIZE
+CLOCK_OFFSET=$CLOCK_OFFSET
+CLOCK_VOFFSET=$CLOCK_VOFFSET
+
 #Расписание задается как множество пар время-режим через запятую
 #время в формате 23:59, режим - FRAME (слайдшоу), CLOCK (часы) или OFF (выключенный экран)
 #Например,
@@ -139,6 +152,13 @@ then
     cp -f $BIN_DIR/changes* $USB_DIR
   fi
 fi
+
+#ToDo: add condition - if config changed
+cat $CONKY_CONF_TEMPLATE | \
+  sed "s/_CLOCK_COLOR_/$CLOCK_COLOR/" |\
+  sed "s/_CLOCK_SIZE_/$CLOCK_SIZE/" |\
+  sed "s/_CLOCK_OFFSET_/$CLOCK_OFFSET/" |\
+  sed "s/_CLOCK_VOFFSET_/$CLOCK_VOFFSET/" > $CONKY_CONF
 
 export DISPLAY=$SLIDESHOW_DISPLAY
 

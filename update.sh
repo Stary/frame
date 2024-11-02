@@ -26,7 +26,7 @@ USB_DIR="/media/usb"
 SSH_KEYS=$SSH_DIR/authorized_keys
 STATIC_BASE_URL="https://quietharbor.net/static/"
 
-CONKY_CONF="conky.conf"
+CONKY_CONF_TEMPLATE="conky.conf.template"
 CONKY_FONT="UbuntuThin.ttf"
 MAIN_SCRIPT="frame_watchdog.sh"
 INFO_SCRIPT="get_info.sh"
@@ -100,7 +100,7 @@ then
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh
 fi
-rsync -av $SRC_DIR/$CONKY_CONF $CONKY_CONF_DIR
+rsync -av $SRC_DIR/$CONKY_CONF_TEMPLATE $CONKY_CONF_DIR
 rsync -av $SRC_DIR/$CONKY_FONT $CONKY_CONF_DIR
 
 
