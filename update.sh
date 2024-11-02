@@ -2,6 +2,11 @@
 
 #bash <(curl -s https://raw.githubusercontent.com/Stary/frame/refs/heads/main/install.sh)
 
+echo "=================================================================================="
+date
+echo "----------------------------------------------------------------------------------"
+
+
 if [ "$EUID" -eq 0 ]
   then echo "Please do not run the script as root"
   exit
