@@ -47,6 +47,11 @@ echo "|$pull_result|$?|"
 VERSION=$($SRC_DIR/$VERSION_SCRIPT)
 popd
 
+cat ~/.bashrc 2>/dev/null| grep -v update.sh > ~/.bashrc.tmp
+mv -f ~/.bashrc.tmp ~/.bashrc
+echo "alias u='cd ~/frame && git pull && ./update.sh 2>/dev/null | tee -a $LOG_DIR/update.log'" >> ~/.bashrc
+source ~/.bashrc
+
 if [ ! -d "$SSH_DIR" ]
 then
   mkdir -p $SSH_DIR
