@@ -155,6 +155,9 @@ fi
 if [ "$config_changed" -gt "0" ]
 then
   echo "Обнаружено изменение конфига"
+  pkill feh
+  pkill conky
+  sleep 3
   echo "$config" > $HOME/$CONFIG
   echo "$c1" > $HOME/$CONFIG.md5
   cat $CONKY_CONF_TEMPLATE | \
@@ -162,7 +165,6 @@ then
   sed "s/_CLOCK_SIZE_/$CLOCK_SIZE/" |\
   sed "s/_CLOCK_OFFSET_/$CLOCK_OFFSET/" |\
   sed "s/_CLOCK_VOFFSET_/$CLOCK_VOFFSET/" > $CONKY_CONF
-  pkill feh
 fi
 
 if [ "$USB_READY" -gt "0" ]
