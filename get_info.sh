@@ -7,6 +7,20 @@ ts=''
 
 export LC_ALL=ru_RU.UTF-8
 export LANG=ru_RU.UTF-8
+VERSION=_VERSION_
+
+
+uptime=$(awk '{print $1}' /proc/uptime | sed 's/\..*//')
+echo "Uptime: $uptime"
+if [ "$uptime" -lt "300" ]
+then
+  echo "Фоторамка v.$VERSION"
+  echo "Подключите флэшку с фотографиями и наслаждайтесь воспоминаниями!"
+  echo "Настройки слайдшоу и часов будут сохранены на флэшке, их можно редактировать."
+  echo "+7 999 999-99-99"
+  echo "https://тут_будет_адрес_сайта.com"
+  exit
+fi
 
 if [ -s "$f" ]
 then
