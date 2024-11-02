@@ -96,7 +96,8 @@ then
   source "$USB_DIR/$CONFIG"
 fi
 
-echo "################################
+read -r -d '' config << EOM
+################################
 #Frame configuration
 ################################
 
@@ -136,7 +137,33 @@ CLOCK_VOFFSET=$CLOCK_VOFFSET
 #Например,
 #SCHEDULE=23:00-OFF,5:00-CLOCK,8:00-FRAME,22:00-CLOCK
 SCHEDULE=$SCHEDULE
-" > $HOME/$CONFIG
+EOM
+
+config_changed=0
+if [ -s $HOME/$CONFIG.md5 ]
+then
+  c1=$(echo "$config"| md5sum | awk '{print $1}')
+  c2=$(cat $HOME/$CONFIG.md5)
+  if [ "$c1" != "$c2" ]
+  then
+    config_changed=1
+  fi
+else
+  config_changed=1
+fi
+
+if [ "$config_changed" -gt "0" ]
+then
+  echo "Обнаружено изменение конфига"
+  echo "$config" > $HOME/$CONFIG
+  echo "$c1" > $HOME/$CONFIG.md5
+  cat $CONKY_CONF_TEMPLATE | \
+  sed "s/_CLOCK_COLOR_/$CLOCK_COLOR/" |\
+  sed "s/_CLOCK_SIZE_/$CLOCK_SIZE/" |\
+  sed "s/_CLOCK_OFFSET_/$CLOCK_OFFSET/" |\
+  sed "s/_CLOCK_VOFFSET_/$CLOCK_VOFFSET/" > $CONKY_CONF
+  pkill feh
+fi
 
 if [ "$USB_READY" -gt "0" ]
 then
@@ -152,13 +179,6 @@ then
     cp -f $BIN_DIR/changes* $USB_DIR
   fi
 fi
-
-#ToDo: add condition - if config changed
-cat $CONKY_CONF_TEMPLATE | \
-  sed "s/_CLOCK_COLOR_/$CLOCK_COLOR/" |\
-  sed "s/_CLOCK_SIZE_/$CLOCK_SIZE/" |\
-  sed "s/_CLOCK_OFFSET_/$CLOCK_OFFSET/" |\
-  sed "s/_CLOCK_VOFFSET_/$CLOCK_VOFFSET/" > $CONKY_CONF
 
 export DISPLAY=$SLIDESHOW_DISPLAY
 
