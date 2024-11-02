@@ -225,6 +225,7 @@ FRAME)
     date
     echo "Переход в режим рамки"
     xset dpms force on
+    xset -dpms
     for d in $DIRS
     do
       if [ -d "$d" ]
@@ -312,6 +313,7 @@ CLOCK)
   fi
   wmctrl -r conky -b add,fullscreen,above
   xset dpms force on
+  xset -dpms
   ;;
 OFF)
   xset dpms force off
