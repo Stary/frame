@@ -149,3 +149,9 @@ then
   $BIN_DIR/$MAIN_SCRIPT
 fi
 
+#ToDo: Эксперимент с разными пользователями media и orangepi
+#ToDo: Создание пользователя media с ограничением chroot в /media
+#ToDo: Перенос папок в /media
+#ToDo: Инструкция по подключению пользователем media
+
+

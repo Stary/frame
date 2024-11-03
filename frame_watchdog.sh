@@ -17,6 +17,7 @@ GEO_MAX_LEN=60
 TIMEZONE=Moscow
 SCREEN_ORIENTATION=auto
 SCHEDULE=05:00-CLOCK,07:00-FRAME,22:00-CLOCK,23:30-OFF
+UPDATE=no
 
 CLOCK_COLOR=C8320A
 CLOCK_SIZE=560
@@ -25,14 +26,22 @@ CLOCK_VOFFSET=320
 
 USB_DIR=/media/usb
 BIN_DIR=$HOME/bin
+LOG_DIR=/var/log/frame
 CONKY_CONF=$HOME/.config/conky/conky.conf
 CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
 
 DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
 IMAGES_DIR=''
-USER=`whoami`
+USER=$(whoami)
 
 ##################### Mount USB ####################
+
+if [ ! -d "$LOG_DIR" ]
+then
+  echo "Папка для логов $LOG_DIR не существует, создаю"
+  sudo mkdir -p $LOG_DIR
+  sudo chown -R $USER $LOG_DIR
+fi
 
 sudo mkdir -p $USB_DIR
 
@@ -102,6 +111,9 @@ read -r -d '' config << EOM
 ################################
 
 VERSION=_VERSION_
+
+#Разовое автоматическое обновление, для разрешения выставить в yes. После применения автоматически сбрасывается в no
+UPDATE=no
 
 #Интервал между фотографиями в слайдшоу, в секундах
 DELAY=$DELAY
@@ -202,6 +214,14 @@ then
   echo "Синхронизация с NTP не работает, включаем принудительный дневной режим"
   target_mode=FRAME
 else
+
+  if [ "X$UPDATE" == "Xyes" ]
+  then
+    echo "Запрошено автоматическое обновление"
+    cd $HOME/frame && git pull && ./update.sh >> $LOG_DIR/update.log 2>&1 &
+    exit
+  fi
+
   TZFILE_NEW=$(find /usr/share/zoneinfo -type f | grep -i "$TIMEZONE" | sort | head -1)
   TZFILE_CUR=$(readlink /etc/localtime)
   if [ -s "$TZFILE_NEW" ] && [ "X$TZFILE_NEW" != "X$TZFILE_CUR" ]
