@@ -61,6 +61,7 @@ echo "status: $git_status"
 pull_result=$(git pull)
 echo "|$pull_result|$?|"
 VERSION=$($SRC_DIR/$VERSION_SCRIPT)
+echo "Version: $VERSION"
 popd
 
 cat ~/.bashrc 2>/dev/null| grep -v update.sh > ~/.bashrc.tmp
@@ -168,8 +169,8 @@ then
   unix2dos $BIN_DIR/$HISTORY_WIN_FILE
   if [ -s $USB_DIR/$HISTORY_FILE ]
   then
-    rsync -av $BIN_DIR/$HISTORY_FILE $USB_DIR
-    rsync -av $BIN_DIR/$HISTORY_WIN_FILE $USB_DIR
+    cp -f $BIN_DIR/$HISTORY_FILE $USB_DIR
+    cp -f $BIN_DIR/$HISTORY_WIN_FILE $USB_DIR
     #Удаление файла истории изменений со старым именем
     rm -f $USB_DIR/changes*.txt
   fi
@@ -207,7 +208,7 @@ then
   $BIN_DIR/$MAIN_SCRIPT
 fi
 
-#ToDo: Генерировать пароль в привязке в идентификатору платы
+#ToDo: Генерировать пароль в привязке к идентификатору платы
 #ToDo: Вынести все настроечные переменные в общий файл
 
 
