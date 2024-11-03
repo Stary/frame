@@ -91,10 +91,10 @@ sudo mkdir -p $MEDIA_DIR
 PWDENT=$(getent passwd $MEDIA_USER)
 if [ -n "$PWDENT" ]; then
   echo "Пользователь $MEDIA_USER уже существует: $PWDENT"
-  usermod -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
+  sudo usermod -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
 else
   echo "Создаем пользователя $MEDIA_USER"
-  useradd -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
+  sudo useradd -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
 fi
 
 if [ -s $MEDIA_PASSWD_FILE ]
