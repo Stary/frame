@@ -86,10 +86,8 @@ then
   sudo passwd -d `whoami`
 fi
 
-getent passwd $MEDIA_USER
-
 sudo mkdir -p $MEDIA_DIR
-
+getent passwd $MEDIA_USER
 if [ $? -eq 0 ]; then
   echo "Пользователь $MEDIA_USER уже существует"
   usermod -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
