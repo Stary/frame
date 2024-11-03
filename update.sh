@@ -146,6 +146,8 @@ then
   pkill unclutter
   pkill feh
   $BIN_DIR/$WALLPAPER_SCRIPT "$DEMO_DIR"
+  ps -ef | grep $MAIN_SCRIPT
+  echo "Текущий процесс: $0"
   $BIN_DIR/$MAIN_SCRIPT
 fi
 

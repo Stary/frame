@@ -218,7 +218,7 @@ else
   if [ "X$UPDATE" == "Xyes" ]
   then
     echo "Запрошено автоматическое обновление"
-    cd $HOME/frame && sleep 3 && git pull && ./update.sh >> $LOG_DIR/update.log 2>&1 &
+    nohup sh -c 'cd $HOME/frame && sleep 3 && git pull && ./update.sh' >> $LOG_DIR/update.log 2>&1 &
     echo "Управление передается скрипту обновления, скрипт $0 завершается"
     exit
   fi
