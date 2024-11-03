@@ -105,7 +105,7 @@ else
   echo "$MEDIA_PASSWD" > $MEDIA_PASSWD_FILE
 fi
 
-echo "$MEDIA_PASSWD" | passwd "$MEDIA_USER" --stdin
+echo "$MEDIA_PASSWD" | sudo passwd "$MEDIA_USER" --stdin
 
 if [ ! -d "$DEMO_DIR" ]
 then
@@ -192,5 +192,6 @@ fi
 #ToDo: Создание пользователя media с ограничением chroot в /media
 #ToDo: Перенос папок в /media
 #ToDo: Инструкция по подключению пользователем media
+#ToDo: Генерировать пароль в привязке в идентификатору платы
 
 
