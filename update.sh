@@ -88,9 +88,9 @@ then
 fi
 
 sudo mkdir -p $MEDIA_DIR
-getent passwd $MEDIA_USER
-if [ $? -eq 0 ]; then
-  echo "Пользователь $MEDIA_USER уже существует"
+PWDENT=$(getent passwd $MEDIA_USER)
+if [ -n "$PWDENT" ]; then
+  echo "Пользователь $MEDIA_USER уже существует: $PWDENT"
   usermod -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
 felse
   echo "Создаем пользователя $MEDIA_USER"
