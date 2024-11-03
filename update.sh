@@ -2,6 +2,12 @@
 
 #bash <(curl -s https://raw.githubusercontent.com/Stary/frame/refs/heads/main/install.sh)
 
+#Проверим, чтобы не был запущен другой экземпляр скрипта
+if pidof -o %PPID -x -- "$0" >/dev/null; then
+  printf >&2 '%s\n' "ERROR: Script $0 already running"
+  exit 1
+fi
+
 echo "=================================================================================="
 date
 echo "----------------------------------------------------------------------------------"
@@ -146,8 +152,6 @@ then
   pkill unclutter
   pkill feh
   $BIN_DIR/$WALLPAPER_SCRIPT "$DEMO_DIR"
-  ps -ef | grep $MAIN_SCRIPT
-  echo "Текущий процесс: $0"
   $BIN_DIR/$MAIN_SCRIPT
 fi
 
