@@ -105,7 +105,7 @@ else
   echo "$MEDIA_PASSWD" > $MEDIA_PASSWD_FILE
 fi
 
-echo "$MEDIA_PASSWD" | sudo passwd "$MEDIA_USER" --stdin
+echo -e "$MEDIA_PASSWD\n$MEDIA_PASSWD" | sudo passwd "$MEDIA_USER"
 
 if [ ! -d "$DEMO_DIR" ]
 then
