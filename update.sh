@@ -102,8 +102,11 @@ fi
 
 if [ -d /etc/ssh/sshd_config.d/ ]
 then
-  echo "Match User $MEDIA_USER" > /etc/ssh/sshd_config.d/$MEDIA_USER.conf
-  echo "  ForceCommand internal-sftp" > /etc/ssh/sshd_config.d/$MEDIA_USER.conf
+  MEDIA_SSH_CONF=/etc/ssh/sshd_config.d/$MEDIA_USER.conf
+  sudo touch $MEDIA_SSH_CONF
+  sudo chown $MEDIA_USER $MEDIA_SSH_CONF
+  echo -e "Match User $MEDIA_USER\n  ForceCommand internal-sftp\n" | sudo tee $MEDIA_SSH_CONF
+  sudo systemctl restart ssh
 fi
 
 if [ -s $MEDIA_PASSWD_FILE ]
