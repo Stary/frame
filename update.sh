@@ -100,12 +100,14 @@ else
   sudo useradd -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
 fi
 
+sudo usermod -g $MEDIA_USER $USER
+
 if [ -d /etc/ssh/sshd_config.d/ ]
 then
   MEDIA_SSH_CONF=/etc/ssh/sshd_config.d/$MEDIA_USER.conf
   sudo touch $MEDIA_SSH_CONF
   sudo chown $MEDIA_USER $MEDIA_SSH_CONF
-  echo -e "Match User $MEDIA_USER\n  ForceCommand internal-sftp\n" | sudo tee $MEDIA_SSH_CONF
+  echo -e "Match User $MEDIA_USER\n  ForceCommand internal-sftp -u 0002\n" | sudo tee $MEDIA_SSH_CONF
   sudo systemctl restart ssh
 fi
 
@@ -136,7 +138,8 @@ fi
 if [ ! -d "$PHOTO_DIR" ]
 then
   sudo mkdir -p "$PHOTO_DIR"
-  sudo chown -R $MEDIA_USER "$PHOTO_DIR"
+  sudo chown -R $MEDIA_USER:$MEDIA_USER "$PHOTO_DIR"
+  sudo chmod 775 "$PHOTO_DIR"
 fi
 
 for d in $CONKY_CONF_DIR $BIN_DIR $LOG_DIR
@@ -200,10 +203,6 @@ then
   $BIN_DIR/$MAIN_SCRIPT
 fi
 
-#ToDo: Эксперимент с разными пользователями media и orangepi
-#ToDo: Создание пользователя media с ограничением chroot в /media
-#ToDo: Перенос папок в /media
-#ToDo: Инструкция по подключению пользователем media
 #ToDo: Генерировать пароль в привязке в идентификатору платы
 #ToDo: Вынести все настроечные переменные в общий файл
 

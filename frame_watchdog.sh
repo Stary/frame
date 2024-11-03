@@ -30,7 +30,7 @@ LOG_DIR=/var/log/frame
 CONKY_CONF=$HOME/.config/conky/conky.conf
 CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
 
-DIRS="$USB_DIR $HOME/frame $HOME/photo $HOME/demo2 $HOME/demo"
+DIRS="$USB_DIR /media/photo $HOME/photo /media/demo $HOME/demo"
 IMAGES_DIR=''
 USER=$(whoami)
 
