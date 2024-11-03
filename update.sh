@@ -92,7 +92,7 @@ PWDENT=$(getent passwd $MEDIA_USER)
 if [ -n "$PWDENT" ]; then
   echo "Пользователь $MEDIA_USER уже существует: $PWDENT"
   usermod -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
-felse
+else
   echo "Создаем пользователя $MEDIA_USER"
   useradd -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
 fi
