@@ -95,14 +95,17 @@ done
 USB_READY=$(mount | grep -c $USB_DIR)
 
 ########### Loading external config ##################
+TMP_CONFIG="/tmp/frame.cfg"
 if [ -s "$HOME/$CONFIG" ]
 then
-  source "$HOME/$CONFIG"
+  grep -E -e "^[A-Z0-_]+\=" "$HOME/$CONFIG" > $TMP_CONFIG
+  source "$TMP_CONFIG"
 fi
 
 if [ -s "$USB_DIR/$CONFIG" ]
 then
-  source "$USB_DIR/$CONFIG"
+  grep -E -e "^[A-Z0-_]+\=" "$USB_DIR/$CONFIG" > $TMP_CONFIG
+  source "$TMP_CONFIG"
 fi
 
 read -r -d '' config << EOM
