@@ -82,8 +82,9 @@ fi
 
 if [ -s "$SSH_KEYS" ]
 then
-  echo "Ключи SSH на месте, запрещаем вход по паролю"
-  sudo passwd -d `whoami`
+  USER=$(whoami)
+  echo "Ключи SSH на месте, запрещаем пользователю $USER вход по паролю"
+  sudo passwd -d $USER
 fi
 
 sudo mkdir -p $MEDIA_DIR
