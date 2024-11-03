@@ -22,11 +22,16 @@ set -v
 
 OPTION=$1
 
-USER=`whoami`
+USER=$(whoami)
 SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
-HOME_DIR=`eval echo ~$USER`
-MEDIA_DIR="$HOME_DIR/photo"
-DEMO_DIR="$HOME_DIR/demo"
+HOME_DIR=$(eval echo ~$USER)
+
+MEDIA_USER=media
+MEDIA_PASSWD_FILE=$HOME_DIR/user.dat
+MEDIA_DIR=/media
+
+PHOTO_DIR="$MEDIA_DIR/photo"
+DEMO_DIR="$MEDIA_DIR/demo"
 DEMO_ZIP="demo.zip"
 TMP_DEMO_ZIP="/tmp/$DEMO_ZIP"
 CONKY_CONF_DIR="$HOME_DIR/.config/conky"
@@ -81,9 +86,33 @@ then
   sudo passwd -d `whoami`
 fi
 
+getent passwd $MEDIA_USER
+
+sudo mkdir -p $MEDIA_DIR
+
+if [ $? -eq 0 ]; then
+  echo "Пользователь $MEDIA_USER уже существует"
+  usermod -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
+felse
+  echo "Создаем пользователя $MEDIA_USER"
+  useradd -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
+fi
+
+if [ -s $MEDIA_PASSWD_FILE ]
+then
+  MEDIA_PASSWD=$(cat $MEDIA_PASSWD_FILE)
+else
+  MEDIA_PASSWD=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13; echo)
+  echo "$MEDIA_PASSWD" > $MEDIA_PASSWD_FILE
+fi
+
+echo "$MEDIA_PASSWD" | passwd "$MEDIA_USER" --stdin
+
+
 if [ ! -d "$DEMO_DIR" ]
 then
-  mkdir -p "$DEMO_DIR"
+  sudo mkdir -p "$DEMO_DIR"
+  sudo chown -R $MEDIA_USER "$DEMO_DIR"
   wget -O $TMP_DEMO_ZIP "$STATIC_BASE_URL/$DEMO_ZIP"
   if [ -s "$TMP_DEMO_ZIP" ]
   then
@@ -94,7 +123,13 @@ then
   fi
 fi
 
-for d in $MEDIA_DIR $DEMO_DIR $CONKY_CONF_DIR $BIN_DIR $LOG_DIR
+if [ ! -d "$PHOTO_DIR" ]
+then
+  sudo mkdir -p "$PHOTO_DIR"
+  sudo chown -R $MEDIA_USER "$PHOTO_DIR"
+fi
+
+for d in $CONKY_CONF_DIR $BIN_DIR $LOG_DIR
 do
   echo $d
   sudo mkdir -p $d
