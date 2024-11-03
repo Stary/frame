@@ -132,7 +132,7 @@ then
 fi
 
 if [ -f /var/run/reboot-required ]; then
-  echo 'Reboot required. Restarting in 10 seconds'
+  echo 'Через 10 секунд перезагружаюсь'
   sleep 10
   sudo reboot
 fi

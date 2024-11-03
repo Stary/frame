@@ -219,7 +219,7 @@ else
   then
     echo "Запрошено автоматическое обновление"
     cd $HOME/frame && sleep 3 && git pull && ./update.sh >> $LOG_DIR/update.log 2>&1 &
-    echo "Управление передается скрипту обновление, скрипт $0 завершается"
+    echo "Управление передается скрипту обновления, скрипт $0 завершается"
     exit
   fi
 
@@ -278,7 +278,7 @@ FRAME)
   PID=$(pgrep exiftran)
   if [ -n "$PID" ]
   then
-    echo "Exiftran is running, exiting"
+    echo "Exiftran уже работает, выхожу"
     exit 0
   fi
 
@@ -382,6 +382,6 @@ OFF)
   xset dpms force off
   ;;
 *)
-  echo "Unknown mode '$target_mode'"
+  echo "Неизвестный режим '$target_mode'"
 esac
 
