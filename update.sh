@@ -124,12 +124,14 @@ echo -e "$MEDIA_PASSWD\n$MEDIA_PASSWD" | sudo passwd "$MEDIA_USER"
 if [ ! -d "$DEMO_DIR" ]
 then
   sudo mkdir -p "$DEMO_DIR"
-  sudo chown -R $USER "$DEMO_DIR"
+  sudo chown -R $USER:$MEDIA_USER "$DEMO_DIR"
+  sudo chmod 775 "$DEMO_DIR"
   wget -O $TMP_DEMO_ZIP "$STATIC_BASE_URL/$DEMO_ZIP"
   if [ -s "$TMP_DEMO_ZIP" ]
   then
     unzip -d "$DEMO_DIR" $TMP_DEMO_ZIP
     rm -f $TMP_DEMO_ZIP
+    sudo chmod -R g+rw "$DEMO_DIR"
   else
     rmdir "$DEMO_DIR"
   fi
