@@ -107,11 +107,10 @@ fi
 
 echo "$MEDIA_PASSWD" | passwd "$MEDIA_USER" --stdin
 
-
 if [ ! -d "$DEMO_DIR" ]
 then
   sudo mkdir -p "$DEMO_DIR"
-  sudo chown -R $MEDIA_USER "$DEMO_DIR"
+  sudo chown -R $USER "$DEMO_DIR"
   wget -O $TMP_DEMO_ZIP "$STATIC_BASE_URL/$DEMO_ZIP"
   if [ -s "$TMP_DEMO_ZIP" ]
   then
