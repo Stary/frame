@@ -85,9 +85,11 @@ chmod 700 $LOG_DIR
 
 if [ -s "$SSH_KEYS" ]
 then
-  USER=$(whoami)
-  echo "Ключи SSH на месте, запрещаем пользователю $USER вход по паролю"
+  echo "Ключи SSH на месте, запрещаем пользователям $USER и root вход по паролю"
   sudo passwd -d $USER
+  sudo passwd -d root
+  sudo sed -i -E -e 's/PermitRootLogin\s+yes/PermitRootLogin no/' /etc/ssh/sshd_config
+  sudo systemctl reload ssh
 fi
 
 sudo mkdir -p $MEDIA_DIR
