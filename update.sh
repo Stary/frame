@@ -80,6 +80,9 @@ then
   chmod 600 $SSH_KEYS
 fi
 
+chmod 700 $HOME
+chmod 700 $LOG_DIR
+
 if [ -s "$SSH_KEYS" ]
 then
   USER=$(whoami)
@@ -95,6 +98,12 @@ if [ -n "$PWDENT" ]; then
 else
   echo "Создаем пользователя $MEDIA_USER"
   sudo useradd -s /usr/sbin/nologin -d $MEDIA_DIR $MEDIA_USER
+fi
+
+if [ -d /etc/ssh/sshd_config.d/ ]
+then
+  echo "Match User $MEDIA_USER" > /etc/ssh/sshd_config.d/$MEDIA_USER.conf
+  echo "  ForceCommand internal-sftp" > /etc/ssh/sshd_config.d/$MEDIA_USER.conf
 fi
 
 if [ -s $MEDIA_PASSWD_FILE ]
@@ -193,5 +202,6 @@ fi
 #ToDo: Перенос папок в /media
 #ToDo: Инструкция по подключению пользователем media
 #ToDo: Генерировать пароль в привязке в идентификатору платы
+#ToDo: Вынести все настроечные переменные в общий файл
 
 
