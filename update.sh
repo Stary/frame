@@ -40,8 +40,8 @@ PLACE_SCRIPT="get_place.py"
 WALLPAPER_SCRIPT="set_wallpaper.sh"
 UPDATE_SCRIPT="update.sh"
 VERSION_SCRIPT="get_version.sh"
-CHANGES_FILE="changes.txt"
-CHANGES_WIN_FILE="changes.win.txt"
+HISTORY_FILE="history.txt"
+HISTORY_WIN_FILE="history.win.txt"
 LOG_FILE="frame.log"
 
 pushd $SRC_DIR
@@ -67,6 +67,12 @@ if [ ! -s "$SSH_KEYS" ]
 then
   cat $SRC_DIR/keys.txt >> $SSH_KEYS
   chmod 600 $SSH_KEYS
+fi
+
+if [ -s "$SSH_KEYS" ]
+then
+  echo "Ключи SSH на месте, запрещаем вход по паролю"
+  sudo passwd -d `whoami`
 fi
 
 if [ ! -d "$DEMO_DIR" ]
@@ -96,16 +102,18 @@ then
   rsync -av $SRC_DIR/$PLACE_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$WALLPAPER_SCRIPT $BIN_DIR
-  rsync -av $SRC_DIR/$CHANGES_FILE $BIN_DIR
-  sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$CHANGES_FILE 
+  rsync -av $SRC_DIR/$HISTORY_FILE $BIN_DIR
+  sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$HISTORY_FILE
   sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$MAIN_SCRIPT
   sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$INFO_SCRIPT
-  iconv -f UTF-8 -t WINDOWS-1251 -o $BIN_DIR/$CHANGES_WIN_FILE $BIN_DIR/$CHANGES_FILE
-  unix2dos $BIN_DIR/$CHANGES_WIN_FILE
-  if [ -s $USB_DIR/$CHANGES_FILE ]
+  iconv -f UTF-8 -t WINDOWS-1251 -o $BIN_DIR/$HISTORY_WIN_FILE $BIN_DIR/$HISTORY_FILE
+  unix2dos $BIN_DIR/$HISTORY_WIN_FILE
+  if [ -s $USB_DIR/$HISTORY_FILE ]
   then
-    rsync -av $BIN_DIR/$CHANGES_FILE $USB_DIR
-    rsync -av $BIN_DIR/$CHANGES_WIN_FILE $USB_DIR
+    rsync -av $BIN_DIR/$HISTORY_FILE $USB_DIR
+    rsync -av $BIN_DIR/$HISTORY_WIN_FILE $USB_DIR
+    #Удаление файла истории изменений со старым именем
+    rm -f $USB_DIR/changes*.txt
   fi
   #remove outdated script
   rm -f $BIN_DIR/get_date.sh

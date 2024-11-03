@@ -175,10 +175,11 @@ then
     echo "Copy $HOME/$CONFIG to $USB_DIR/$CONFIG"
     cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
   fi
-  diff2=$(diff $HOME/changes.txt $USB_DIR/changes.txt 2>&1)
+  diff2=$(diff $HOME/history.txt $USB_DIR/history.txt 2>&1)
   if [ -n "$diff2" ]
   then
-    cp -f $BIN_DIR/changes* $USB_DIR
+    cp -f $BIN_DIR/history* $USB_DIR
+    rm -f $USB_DIR/changes*.txt
   fi
 fi
 
