@@ -24,11 +24,9 @@ then
   done
 fi
 
-unclutter_running=$(pgrep -c unclutter)
-if [ -z "$unclutter_running" ]; then
-  echo $unclutter_running
-  pgrep unclutter
-  unclutter -root 2>&1 >/dev/null &
+unclutter_pid=$(pgrep unclutter)
+if [ -z "$unclutter_pid" ]; then
+  unclutter -root >/dev/null 2>&1 &
 fi
 
 xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2

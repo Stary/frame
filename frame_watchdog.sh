@@ -184,8 +184,8 @@ fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
 
-unclutter_running=$(pgrep unclutter)
-if [ -z "$unclutter_running" ]; then
+unclutter_pid=$(pgrep unclutter)
+if [ -z "$unclutter_pid" ]; then
   unclutter -root >/dev/null 2>&1 &
 fi
 
@@ -199,7 +199,7 @@ NTP=$(chronyc tracking | grep -i status | grep -i normal | wc -l)
 if (( $NTP == 0 ))
 then
   echo "Синхронизация с NTP не работает, включаем принудительный дневной режим"
-  TIME=$DAY
+  target_mode=FRAME
 else
   TZFILE_NEW=$(find /usr/share/zoneinfo -type f | grep -i "$TIMEZONE" | sort | head -1)
   TZFILE_CUR=$(readlink /etc/localtime)
@@ -209,45 +209,44 @@ else
     sudo ln -f -s $TZFILE_NEW /etc/localtime
     date
   fi
-fi
 
+  #############  Определение текущего режима ################################################
 
-#############  Определение текущего режима ################################################
+  sorted=$(for interval in $(echo "$SCHEDULE" | sed 's/,/ /g'); do
+    IFS='-' read -r hm mode <<< "$interval"
+    seconds=$(( 1000000 + $(date -d "$hm" +%s) - $(date -d "00:00" +%s) ))
+    echo "$seconds-$mode-$hm"
+  done | sort -r)
 
-sorted=$(for interval in $(echo "$SCHEDULE" | sed 's/,/ /g'); do
-  IFS='-' read -r hm mode <<< "$interval"
-  seconds=$(( 1000000 + $(date -d "$hm" +%s) - $(date -d "00:00" +%s) ))
-  echo "$seconds-$mode-$hm"
-done | sort -r)
+  if [ "X$TEST_HM" != "X" ]
+  then
+    now=$(( 1000000 + $(date -d "$TEST_HM" +%s) - $(date -d "00:00" +%s) ))
+  else
+    now=$(( 1000000 + $(date +%s) - $(date -d "00:00" +%s) ))
+  fi
 
-if [ "X$TEST_HM" != "X" ]
-then
-  now=$(( 1000000 + $(date -d "$TEST_HM" +%s) - $(date -d "00:00" +%s) ))
-else
-  now=$(( 1000000 + $(date +%s) - $(date -d "00:00" +%s) ))
-fi
+  target_mode=""
 
-target_mode=""
+  for time_mode in $sorted; do
+    IFS='-' read -r time mode hm <<< $time_mode
+    #echo "now='$now' time='$time' mode='$mode' hm='$hm'"
+    if [ "X$target_mode" == "X" ]
+    then
+      target_mode=$mode
+    fi
+    if [ "$time" -le "$now" ]
+    then
+      target_mode=$mode
+      break
+    fi
+  done
 
-for time_mode in $sorted; do
-  IFS='-' read -r time mode hm <<< $time_mode
-  #echo "now='$now' time='$time' mode='$mode' hm='$hm'"
   if [ "X$target_mode" == "X" ]
   then
-    target_mode=$mode
+    target_mode='FRAME'
   fi
-  if [ "$time" -le "$now" ]
-  then
-    target_mode=$mode
-    break
-  fi
-done
 
-if [ "X$target_mode" == "X" ]
-then
-  target_mode='FRAME'
 fi
-
 
 
 case "$target_mode" in
@@ -255,7 +254,7 @@ FRAME)
   pkill conky
 
   PID=$(pgrep exiftran)
-  if [ ! -z "$PID" ]
+  if [ -n "$PID" ]
   then
     echo "Exiftran is running, exiting"
     exit 0
