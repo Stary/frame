@@ -16,7 +16,7 @@ MEDIA_PASSWD=$(cat ~/user.dat)
 IP=$(ifconfig | grep inet | grep -v inet6 | grep -v 127.0.0.1 | sed 's/.*inet *//' | sed 's/ *netmask.*//')
 
 uptime=$(awk '{print $1}' /proc/uptime | sed 's/\..*//')
-changed_files=$(find $BIN_DIR -type f -mmin -5)
+changed_files=$(find $BIN_DIR -type f -mmin -5 | grep -v pycache)
 if [ "$uptime" -lt "300" ] || [ -n "$changed_files" ]
 then
   echo "Фоторамка v.$VERSION"

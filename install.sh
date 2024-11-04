@@ -16,7 +16,7 @@ RELEASE=$(lsb_release -c | sed 's/.*\:\s*//')
 
 
 echo "+============================+"
-echo "|   Advanced Photo Frame 1.0 |"
+echo "|   Advanced Photo Frame     |"
 echo "+============================+"
 
 
