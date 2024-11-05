@@ -98,7 +98,7 @@ USB_READY=$(mount | grep -c $USB_DIR)
 TMP_CONFIG="/tmp/frame.cfg"
 if [ -s "$HOME/$CONFIG" ]
 then
-  grep -E -e "^[A-Z0-_]+\=" "$HOME/$CONFIG" > $TMP_CONFIG
+  grep -E -e "^[A-Z0-9_]+\=" "$HOME/$CONFIG" > $TMP_CONFIG
   source "$TMP_CONFIG"
 fi
 

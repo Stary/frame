@@ -118,7 +118,7 @@ if [ -s $MEDIA_PASSWD_FILE ]
 then
   MEDIA_PASSWD=$(cat $MEDIA_PASSWD_FILE)
 else
-  MEDIA_PASSWD=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13; echo)
+  MEDIA_PASSWD=$(tr -dc A-HJKMNP-Za-hjkmnp-z1-9 </dev/urandom | head -c 10; echo)
   echo "$MEDIA_PASSWD" > $MEDIA_PASSWD_FILE
 fi
 
