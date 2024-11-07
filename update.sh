@@ -69,6 +69,23 @@ mv -f ~/.bashrc.tmp ~/.bashrc
 echo "alias u='cd ~/frame && git pull && ./update.sh 2>/dev/null | tee -a $LOG_DIR/update.log'" >> ~/.bashrc
 source ~/.bashrc
 
+#Отключение IPv6
+RANDOM_STR=$(tr -dc A-HJKMNP-Za-hjkmnp-z1-9 </dev/urandom | head -c 8)
+ETC_SYSCTL=/etc/sysctl.conf
+TMP_SYSCTL=/tmp/$RANDOM_STR
+
+sudo grep -v disable_ipv6 $ETC_SYSCTL > "$TMP_SYSCTL"
+sudo sysctl -a | grep disable_ipv6 | sed 's/ *= *0/ = 1/' >> "$TMP_SYSCTL"
+
+if [ -s "$TMP_SYSCTL" ]
+then
+  sudo cp -f "$TMP_SYSCTL" $ETC_SYSCTL
+  rm -f "$TMP_SYSCTL"
+  sudo sysctl -p
+fi
+
+###############################################
+
 if [ ! -d "$SSH_DIR" ]
 then
   mkdir -p $SSH_DIR
@@ -210,5 +227,6 @@ fi
 
 #ToDo: Генерировать пароль в привязке к идентификатору платы
 #ToDo: Вынести все настроечные переменные в общий файл
+#ToDo: Добавить файл ограничения по времени демонстрации с заданным стартовым слайдом
 
 
