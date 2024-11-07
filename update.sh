@@ -204,7 +204,7 @@ target_file='/usr/share/plymouth/themes/orangepi/watermark.png'
 target_md5=$(md5sum "$target_file" | cut -d ' ' -f 1)
 
 source_url='https://quietharbor.net/static/watermark.png'
-source_md5='add6dc26755985a51f41652c593ac345'
+source_md5='5abdadce0078e2e07f161701c56e3d7f'
 
 tmp_file='/tmp/watermark.png'
 
