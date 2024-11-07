@@ -197,6 +197,36 @@ fi
 rsync -av $SRC_DIR/$CONKY_CONF_TEMPLATE $CONKY_CONF_DIR
 rsync -av $SRC_DIR/$CONKY_FONT $CONKY_CONF_DIR
 
+##################################################################
+#Обновление логотипа
+
+target_file='/usr/share/plymouth/themes/orangepi/watermark.png'
+target_md5=$(md5sum "$target_file" | cut -d ' ' -f 1)
+
+source_url='https://quietharbor.net/static/watermark.png'
+source_md5='add6dc26755985a51f41652c593ac345'
+
+tmp_file='/tmp/watermark.png'
+
+#scp -P 57093 watermark.png root@quietharbor.net:/var/www/quietharbor.net/static
+
+if [ "X$source_md5" != "X$target_md5" ]
+then
+  echo "Source MD5: $source_md5 != Target MD5: $target_md5"
+  wget -O "$tmp_file" "$source_url"
+  tmp_md5=$(md5sum "$tmp_file" | cut -d ' ' -f 1)
+  if [ "X$tmp_md5" == "X$source_md5" ]
+  then
+    echo "Скачан корректный файл с логотипом, обновляем"
+    sudo cp -f $tmp_file $target_file
+    sudo update-initramfs -u
+  fi
+else
+  echo "Логотип актуальный, обновление не требуется"
+fi
+
+########################################################################
+#Включение ежеминутного запуска контрольного скрипта
 
 #(crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $SRC_DIR/$UPDATE_SCRIPT norestart >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 (crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT) | crontab -
