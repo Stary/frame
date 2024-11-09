@@ -116,6 +116,8 @@ do
           sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV
           connection_status=$(internet)
           echo "Статус подключения: $connection_status"
+        else
+          echo "Параметры сети в файле $file совпадают с уже известными"
         fi
       fi
     fi
