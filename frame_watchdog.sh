@@ -92,7 +92,7 @@ while IFS= read -r -d '' file
 do
   tmp_wifi_config=/tmp/wifi.cfg
   echo "Обнаружен файл с данными для подключения к сети WiFi: $file"
-  cat $file > $tmp_wifi_config
+  cat "$file" > $tmp_wifi_config
   dos2unix $tmp_wifi_config
   wifi_ssid=""
   wifi_password=""
@@ -109,6 +109,7 @@ do
       fi
     fi
   done
+  mv -f "$file" "$file.backup"
 done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)' -print0)
 
 read -r -d '' config << EOM
