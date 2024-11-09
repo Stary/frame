@@ -99,21 +99,25 @@ do
   echo "Обнаружен файл с данными для подключения к сети WiFi: $file"
   cat "$file" > $tmp_wifi_config
   dos2unix $tmp_wifi_config
-  wifi_ssid=""
-  wifi_password=""
+  WIFI_SSID2=""
+  WIFI_PASSWORD2=""
   for line in $(grep -v -e '^$' $tmp_wifi_config | head -2)
   do
-    if [ "X$WIFI_SSID" == 'X' ]; then
-      WIFI_SSID=$line
+    if [ "X$WIFI_SSID2" == 'X' ]; then
+      WIFI_SSID2=$line
     else
-      if [ "X$WIFI_PASSWORD" == 'X' ]; then
-        WIFI_SSID=$wifi_ssid
-        WIFI_PASSWORD=$line
-        echo "Подключаемся к сети $WIFI_SSID"
-        sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV
-        connection_status=$(internet)
-        echo "Статус подключения: $connection_status"
-     fi
+      if [ "X$WIFI_PASSWORD2" == 'X' ]; then
+        WIFI_PASSWORD2=$line
+        if [ "X$WIFI_SSID2" != "X$WIFI_SSID" ] || [ "X$WIFI_PASSWORD2" != "X$WIFI_PASSWORD" ]
+        then
+          WIFI_SSID=$WIFI_SSID2
+          WIFI_PASSWORD=$WIFI_PASSWORD2
+          echo "Подключаемся к сети $WIFI_SSID"
+          sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV
+          connection_status=$(internet)
+          echo "Статус подключения: $connection_status"
+        fi
+      fi
     fi
   done
   mv -f "$file" "$file.backup"
