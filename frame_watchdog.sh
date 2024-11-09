@@ -91,8 +91,8 @@ fi
 while IFS= read -r -d '' file
 do
   tmp_wifi_config=/tmp/wifi.cfg
-  echo "Обнаружен файл с данными для подключения к сети WiFi: $f"
-  cat $f > $tmp_wifi_config
+  echo "Обнаружен файл с данными для подключения к сети WiFi: $file"
+  cat $file > $tmp_wifi_config
   dos2unix $tmp_wifi_config
   wifi_ssid=""
   wifi_password=""
