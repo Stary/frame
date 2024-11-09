@@ -36,6 +36,12 @@ DIRS="$USB_DIR /media/photo $HOME/photo /media/demo $HOME/demo"
 IMAGES_DIR=''
 USER=$(whoami)
 
+WIFI_DEV='wlan0'
+WIFI_MAC=$((16#$(ifconfig $WIFI_DEV 2>/dev/null | awk '/ether/ {print $2}' | cut -d ':' -f 5-6 | sed 's/://g' | tr a-z A-Z)))
+WIFI_AP_PASSWORD_FILE="$HOME/user.dat"
+
+function internet { wget -q --spider http://google.com 2>/dev/null && chronyc tracking | grep -i status | grep -i normal | wc -l; }
+
 ##################### Mount USB ####################
 
 if [ ! -d "$LOG_DIR" ]
@@ -62,7 +68,6 @@ do
     sudo chmod 777 $USB_DIR
     if sudo mount "$name" $USB_DIR -o umask=000,user,utf8
     then
-      USB_READY=1
       echo "Флэшка успешно подключена"
     fi
     pkill feh
@@ -98,15 +103,17 @@ do
   wifi_password=""
   for line in $(grep -v -e '^$' $tmp_wifi_config | head -2)
   do
-    if [ "$wifi_ssid" == '' ]; then
-      wifi_ssid=$line
+    if [ "X$WIFI_SSID" == 'X' ]; then
+      WIFI_SSID=$line
     else
-      if [ "$wifi_password" == '' ]; then
-        wifi_password=$line
-        #sudo nmcli device wifi connect "$wifi_ssid" password "$wifi_password" ifname wlan0
+      if [ "X$WIFI_PASSWORD" == 'X' ]; then
         WIFI_SSID=$wifi_ssid
-        WIFI_PASSWORD=$wifi_password
-      fi
+        WIFI_PASSWORD=$line
+        echo "Подключаемся к сети $WIFI_SSID"
+        sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV
+        connection_status=$(internet)
+        echo "Статус подключения: $connection_status"
+     fi
     fi
   done
   mv -f "$file" "$file.backup"
