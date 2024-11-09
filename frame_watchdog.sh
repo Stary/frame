@@ -7,6 +7,8 @@ if pidof -o %PPID -x -- "$0" >/dev/null; then
 fi
 
 #Значения по-умолчанию, переопределяются значениями из файла frame.cfg в домашней папке пользователя либо в корне флэшки
+WIFI_SSID=''
+WIFI_PASSWORD=''
 DELAY=55.0
 RANDOM_ORDER=no
 CONFIG=frame.cfg
@@ -58,41 +60,42 @@ do
     echo "Найден внешний раздел $name"
     sudo chown $USER:$USER $USB_DIR
     sudo chmod 777 $USB_DIR
-    if sudo mount $name $USB_DIR -o umask=000,user,utf8; then
+    if sudo mount "$name" $USB_DIR -o umask=000,user,utf8
+    then
       USB_READY=1
-      for f in $(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)')
-      do
-        tmp_wifi_config=/tmp/wifi.cfg
-        echo $f
-        cat $f > $tmp_wifi_config
-        dos2unix $tmp_wifi_config
-        wifi_ssid=""
-        wifi_password=""
-        for line in $(head -10 $tmp_wifi_config)
-        do
-          if [ $line != '' ]; then
-            echo $line
-            if [ "$wifi_ssid" == '' ]; then
-              wifi_ssid=$line
-              wifi_nm_file="/etc/NetworkManager/system-connections/$wifi_ssid.nmconnection"
-            else
-              if [ "$wifi_password" == '' ]; then
-                wifi_password=$line
-                echo "WiFi: $wifi_ssid/$wifi_password"
-                sudo nmcli device wifi connect "$wifi_ssid" password "$wifi_password" ifname wlan0
-                echo "Created Network Manager config at $wifi_nm_file"
-              fi
-            fi
-          fi
-        done
-        rsync -av $BIN_DIR/changes.txt $USB_DIR
-      done
+      echo "Флэшка успешно подключена"
     fi
     pkill feh
   fi
 done
 
 USB_READY=$(mount | grep -c $USB_DIR)
+
+##################################################################################################
+# Loading wifi connection details if any
+
+while IFS= read -r -d '' file
+do
+  tmp_wifi_config=/tmp/wifi.cfg
+  echo "Обнаружен файл с данными для подключения к сети WiFi: $f"
+  cat $f > $tmp_wifi_config
+  dos2unix $tmp_wifi_config
+  wifi_ssid=""
+  wifi_password=""
+  for line in $(grep -v -e '^$' $tmp_wifi_config | head -2)
+  do
+    if [ "$wifi_ssid" == '' ]; then
+      wifi_ssid=$line
+    else
+      if [ "$wifi_password" == '' ]; then
+        wifi_password=$line
+        #sudo nmcli device wifi connect "$wifi_ssid" password "$wifi_password" ifname wlan0
+        WIFI_SSID=$wifi_ssid
+        WIFI_PASSWORD=$wifi_password
+      fi
+    fi
+  done
+done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)')
 
 ########### Loading external config ##################
 TMP_CONFIG="/tmp/frame.cfg"
@@ -152,6 +155,10 @@ CLOCK_VOFFSET=$CLOCK_VOFFSET
 #Например,
 #SCHEDULE=23:00-OFF,5:00-CLOCK,8:00-FRAME,22:00-CLOCK
 SCHEDULE=$SCHEDULE
+
+#Параметры подключения к сети WiFi
+WIFI_SSID=$WIFI_SSID
+WIFI_PASSWORD=$WIFI_PASSWORD
 EOM
 
 config_changed=0
