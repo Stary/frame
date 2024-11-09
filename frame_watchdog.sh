@@ -109,7 +109,7 @@ do
       fi
     fi
   done
-done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)')
+done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)' -print0)
 
 read -r -d '' config << EOM
 ################################
