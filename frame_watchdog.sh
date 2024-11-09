@@ -71,6 +71,20 @@ done
 
 USB_READY=$(mount | grep -c $USB_DIR)
 
+########### Loading external config ##################
+TMP_CONFIG="/tmp/frame.cfg"
+if [ -s "$HOME/$CONFIG" ]
+then
+  grep -E -e "^[A-Z0-9_]+\=" "$HOME/$CONFIG" > $TMP_CONFIG
+  source "$TMP_CONFIG"
+fi
+
+if [ -s "$USB_DIR/$CONFIG" ]
+then
+  grep -E -e "^[A-Z0-_]+\=" "$USB_DIR/$CONFIG" > $TMP_CONFIG
+  source "$TMP_CONFIG"
+fi
+
 ##################################################################################################
 # Loading wifi connection details if any
 
@@ -96,20 +110,6 @@ do
     fi
   done
 done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)')
-
-########### Loading external config ##################
-TMP_CONFIG="/tmp/frame.cfg"
-if [ -s "$HOME/$CONFIG" ]
-then
-  grep -E -e "^[A-Z0-9_]+\=" "$HOME/$CONFIG" > $TMP_CONFIG
-  source "$TMP_CONFIG"
-fi
-
-if [ -s "$USB_DIR/$CONFIG" ]
-then
-  grep -E -e "^[A-Z0-_]+\=" "$USB_DIR/$CONFIG" > $TMP_CONFIG
-  source "$TMP_CONFIG"
-fi
 
 read -r -d '' config << EOM
 ################################
