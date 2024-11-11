@@ -204,7 +204,7 @@ UPDATE=no
 DELAY=$DELAY
 
 #Интервал до перезапуска слайдшоу в минутах, полезно для переключения на другой день в истории
-RESTART_SLISHOW_AFTER=$RESTART_SLIDESHOW_AFTER
+RESTART_SLIDESHOW_AFTER=$RESTART_SLIDESHOW_AFTER
 
 #Порядок смены слайдов. yes - случайный, no - сортировка по имени файла, но со случайным начальным файлом
 RANDOM_ORDER=$RANDOM_ORDER
