@@ -250,7 +250,7 @@ then
   echo "$changed_files file(s) were updated, so restarting the service"
   pkill conky
   pkill unclutter
-  pkill feh
+  pkill -f feh
   $BIN_DIR/$WALLPAPER_SCRIPT "$DEMO_DIR"
   $BIN_DIR/$MAIN_SCRIPT
 fi

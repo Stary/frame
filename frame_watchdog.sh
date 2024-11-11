@@ -452,7 +452,7 @@ FRAME)
       if [ "$sleep_to_restart" -gt 0 ]
       then
         echo "Запускаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
-        nohup sh -c "sleep $sleep_to_restart; pkill -f feh" 2>&1 >/dev/null &
+        nohup sh -c "sleep $sleep_to_restart; pkill -f feh" >/dev/null 2>&1 &
       fi
       feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
     else
