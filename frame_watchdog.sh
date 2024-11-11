@@ -40,6 +40,10 @@ WIFI_DEV='wlan0'
 WIFI_MAC=$((16#$(ifconfig $WIFI_DEV 2>/dev/null | awk '/ether/ {print $2}' | cut -d ':' -f 5-6 | sed 's/://g' | tr a-z A-Z)))
 WIFI_AP_PASSWORD_FILE="$HOME/user.dat"
 
+WIFI_SSID=''
+WIFI_PASSWORD=''
+WIFI_ERROR=''
+
 function internet { wget -q --spider http://google.com 2>/dev/null && chronyc tracking | grep -i status | grep -i normal | wc -l; }
 
 ##################### Mount USB ####################
@@ -125,6 +129,65 @@ do
   mv -f "$file" "$file.backup"
 done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)' -print0)
 
+
+##########################################################################################################
+#Проверка статуса подключения, многоуровневая логика восстановления подключения
+
+#Определим целевой статус, требуется ли подключение к существующей сети
+if [ "X$WIFI_SSID" != "X" ] && [ "X$WIFI_PASSWORD" != "X" ]
+then
+  #Проверим подключение к Интернету, если все уже работает - просто выходим
+  if [ "X$(internet)" != "X1" ]
+  then
+    echo "Интернет недоступен, подключаемся к сети WiFi '$WIFI_SSID'"
+    pkill nm-applet
+    res=$(sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV 2>&1)
+    echo "Res: $res"
+    if [[ $res == *"property is invalid"* ]] || [[ $res == *"not provided"* ]]
+    then
+      WIFI_ERROR="Wrong password $WIFI_PASSWORD"
+      WIFI_PASSWORD=''
+    elif [ "X$(internet)" != "X1" ]
+    then
+      network_available=$(sudo nmcli dev wifi | grep -E -e "\s$WIFI_SSID\s")
+      all_networks=$(sudo nmcli dev wifi | head -10)
+      if [ -z "$network_available" ] && [ -n "$all_networks" ]
+      then
+        WIFI_ERROR="Network $WIFI_SSID not found"
+        echo "All networks:"
+        echo "$all_networks"
+      else
+        echo "Интернет все еще недоступен, перегружаем NetworkManager"
+        sudo systemctl restart NetworkManager
+        sleep 5
+        if [ "X$(internet)" != "X1" ]
+        then
+          echo "Перезагрузка NetworkManager не помогла, повторно пытаемся подключиться к сети WiFi '$WIFI_SSID'"
+          res=$(sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV 2>&1)
+          echo "Res: $res"
+	        sleep 5
+	        if [ "X$(internet)" != "X1" ]
+	        then
+	          echo "Подключение так и не установлено. Возможно, поможет полная перезагрузка"
+	          echo "Доступные WiFi-сети:"
+	          sudo nmcli dev wifi list
+	          echo "Подключения:"
+            sudo nmcli con
+            echo "Устройства:"
+	          sudo nmcli dev
+	        fi
+        fi
+      fi
+    else
+      echo "Подключение к Интернету установлено"
+      WIFI_ERROR=''
+    fi
+  else
+    #echo "Интернет доступен, изменение настроек не требуется"
+    WIFI_ERROR=''
+  fi
+fi
+
 read -r -d '' config << EOM
 ################################
 #Frame configuration
@@ -173,10 +236,11 @@ SCHEDULE=$SCHEDULE
 #Параметры подключения к сети WiFi
 WIFI_SSID=$WIFI_SSID
 WIFI_PASSWORD=$WIFI_PASSWORD
+WIFI_ERROR=$WIFI_ERROR
 EOM
 
 config_changed=0
-if [ -s $HOME/$CONFIG.md5 ]
+if [ -s "$HOME/$CONFIG.md5" ]
 then
   c1=$(echo "$config"| md5sum | awk '{print $1}')
   c2=$(cat $HOME/$CONFIG.md5)
@@ -194,13 +258,13 @@ then
   pkill feh
   pkill conky
   sleep 3
-  echo "$config" > $HOME/$CONFIG
-  echo "$c1" > $HOME/$CONFIG.md5
-  cat $CONKY_CONF_TEMPLATE | \
+  echo "$config" > "$HOME/$CONFIG"
+  echo "$c1" > "$HOME/$CONFIG.md5"
+  cat "$CONKY_CONF_TEMPLATE" | \
   sed "s/_CLOCK_COLOR_/$CLOCK_COLOR/" |\
   sed "s/_CLOCK_SIZE_/$CLOCK_SIZE/" |\
   sed "s/_CLOCK_OFFSET_/$CLOCK_OFFSET/" |\
-  sed "s/_CLOCK_VOFFSET_/$CLOCK_VOFFSET/" > $CONKY_CONF
+  sed "s/_CLOCK_VOFFSET_/$CLOCK_VOFFSET/" > "$CONKY_CONF"
 fi
 
 if [ "$USB_READY" -gt "0" ]
