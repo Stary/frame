@@ -12,7 +12,7 @@ WIFI_PASSWORD=''
 DELAY=55.0
 RANDOM_ORDER=no
 CONFIG=frame.cfg
-SLIDESHOW_DISPLAY=:0.0
+SLIDESHOW_DISPLAY=:0
 FONT_DIR=/usr/share/fonts/truetype/freefont/
 FONT=FreeMono/24
 GEO_MAX_LEN=60
@@ -35,6 +35,8 @@ CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
 DIRS="$USB_DIR /media/photo $HOME/photo /media/demo $HOME/demo"
 IMAGES_DIR=''
 USER=$(whoami)
+
+RESTART_SLIDESHOW_AFTER=120
 
 WIFI_DEV='wlan0'
 WIFI_MAC=$((16#$(ifconfig $WIFI_DEV 2>/dev/null | awk '/ether/ {print $2}' | cut -d ':' -f 5-6 | sed 's/://g' | tr a-z A-Z)))
@@ -201,6 +203,9 @@ UPDATE=no
 #Интервал между фотографиями в слайдшоу, в секундах
 DELAY=$DELAY
 
+#Интервал до перезапуска слайдшоу в минутах, полезно для переключения на другой день в истории
+RESTART_SLISHOW_AFTER=$RESTART_SLIDESHOW_AFTER
+
 #Порядок смены слайдов. yes - случайный, no - сортировка по имени файла, но со случайным начальным файлом
 RANDOM_ORDER=$RANDOM_ORDER
 
@@ -236,6 +241,7 @@ SCHEDULE=$SCHEDULE
 #Параметры подключения к сети WiFi
 WIFI_SSID=$WIFI_SSID
 WIFI_PASSWORD=$WIFI_PASSWORD
+#Ошибка подключения к сети WiFi, автоматически обнуляется после успешного подключения
 WIFI_ERROR=$WIFI_ERROR
 EOM
 
@@ -255,7 +261,7 @@ fi
 if [ "$config_changed" -gt "0" ]
 then
   echo "Обнаружено изменение конфига"
-  pkill feh
+  pkill -f feh
   pkill conky
   sleep 3
   echo "$config" > "$HOME/$CONFIG"
@@ -338,7 +344,7 @@ else
   target_mode=""
 
   for time_mode in $sorted; do
-    IFS='-' read -r time mode hm <<< $time_mode
+    IFS='-' read -r time mode hm <<< "$time_mode"
     #echo "now='$now' time='$time' mode='$mode' hm='$hm'"
     if [ "X$target_mode" == "X" ]
     then
@@ -357,7 +363,6 @@ else
   fi
 
 fi
-
 
 case "$target_mode" in
 FRAME)
@@ -443,6 +448,12 @@ FRAME)
     PID=$(pgrep feh)
     if [ -z "$PID" ]
     then
+      sleep_to_restart=$(echo "$RESTART_SLIDESHOW_AFTER*60-10" | bc)
+      if [ "$sleep_to_restart" -gt 0 ]
+      then
+        echo "Запускаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
+        nohup sh -c "sleep $sleep_to_restart; pkill -f feh" 2>&1 >/dev/null &
+      fi
       feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
     else
       echo "Feh уже успел запуститься"
