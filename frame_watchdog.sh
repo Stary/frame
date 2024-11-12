@@ -56,7 +56,7 @@ NET_OK=0
 
 
 function get_connection_status {
-  wifi_net_cnt=$(sudo nmcli d wifi list | wc -l)
+  wifi_net_cnt=$(sudo nmcli d wifi list | grep -v BSSID | grep -v SIGNAL| wc -l)
   if [ "$wifi_net_cnt" -eq '0' ]
   then
     #no wifi network at all
@@ -189,9 +189,37 @@ then
   st=$(get_connection_status)
   if [ "$st" -eq "$NET_DOWN" ]
   then
+
     echo "Не найдено ни одной сети WiFi. Перегружаем Network Manager, после чего обновим статус подключения"
-    sudo systemctl restart NetworkManager
+
+    echo "Состояние до перезагрузки:"
+    ifconfig $WIFI_DEV
+    sudo nmcli d
+    sudo nmcli d wifi
+    sudo nmcli c
+    sudo rfkill
+
+    sudo systemctl stop NetworkManager
+    sudo systemctl stop wpa_supplicant
+    sudo ifconfig $WIFI_DEV down
+    sudo ip link set $WIFI_DEV down
+    sudo rfkill block wlan
+
     sleep 5
+    sudo rfkill unblock wlan
+    sudo ip link set $WIFI_DEV up
+    sudo ifconfig $WIFI_DEV up
+    sudo systemctl start wpa_supplicant
+    sudo systemctl start NetworkManager
+    sleep 10
+
+    echo "Состояние после перезагрузки:"
+    ifconfig $WIFI_DEV
+    sudo nmcli d
+    sudo nmcli d wifi
+    sudo nmcli c
+    sudo rfkill
+
     st=$(get_connection_status)
   fi
 
@@ -202,6 +230,7 @@ then
     $NET_NOT_CONNECTED)
       echo "Сеть не подключена, пытаемся подключиться"
       pkill nm-applet
+      for ssid in $(sudo nmcli con  | grep -i wlan0 | cut -d ' ' -f 1); do sudo nmcli con del $ssid; done
       res=$(sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV 2>&1)
       echo "Res: $res"
       if [[ $res == *"property is invalid"* ]] || [[ $res == *"not provided"* ]]
