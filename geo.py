@@ -10,6 +10,7 @@ import json
 import logging
 from logging import handlers
 
+DEFAULT_MAX_LEN=60
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -100,7 +101,16 @@ def get_nominatim_data(lat, lon):
     return data
 
 
-def get_descr_by_address(address, max_len=80):
+def get_descr_by_address(address, max_len_str=DEFAULT_MAX_LEN):
+
+    try:
+        if max_len_str != '':
+            max_len = int(max_len_str)
+        else:
+            max_len = DEFAULT_MAX_LEN
+    except Exception as e:
+        max_len = DEFAULT_MAX_LEN
+
     try:
         logger.debug(f"{address=}")
         country_short_name = {"us": "США", "ae": "ОАЭ"}
