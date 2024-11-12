@@ -101,14 +101,13 @@ def get_nominatim_data(lat, lon):
     return data
 
 
-def get_descr_by_address(address, max_len_str=DEFAULT_MAX_LEN):
+def get_descr_by_address(address, max_len=DEFAULT_MAX_LEN):
 
     try:
-        if max_len_str != '':
-            max_len = int(max_len_str)
-        else:
-            max_len = DEFAULT_MAX_LEN
-    except Exception as e:
+        max_len = int(float(max_len))
+    except ValueError as e:
+        max_len = DEFAULT_MAX_LEN
+    except TypeError as e:
         max_len = DEFAULT_MAX_LEN
 
     try:
@@ -273,7 +272,7 @@ def set_place_descr(lat, lon, descr, radius = 100.0):
             logger.error(f"Exception: {traceback.format_exc()}")
 
 
-def get_place_descr(lat, lon, raw=False, max_len = 80):
+def get_place_descr(lat, lon, raw=False, max_len=DEFAULT_MAX_LEN):
     global r
     global logger
 
