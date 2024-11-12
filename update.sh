@@ -209,6 +209,7 @@ source_md5='945b971ec6e01333ce70ed9d24957cc1'
 tmp_file='/tmp/watermark.png'
 
 #scp -P 57093 watermark.png root@quietharbor.net:/var/www/quietharbor.net/static
+#
 
 if [ "X$source_md5" != "X$target_md5" ]
 then
@@ -257,6 +258,6 @@ fi
 
 #ToDo: Генерировать пароль в привязке к идентификатору платы
 #ToDo: Вынести все настроечные переменные в общий файл
-#ToDo: Добавить файл ограничения по времени демонстрации с заданным стартовым слайдом
+#ToDo: Загружать конфиг построчным чтением файла и инициализацией переменных
 
 

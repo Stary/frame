@@ -2,8 +2,10 @@
 
 #Проверим, чтобы не был запущен другой экземпляр скрипта
 if pidof -o %PPID -x -- "$0" >/dev/null; then
-  printf >&2 '%s\n' "ERROR: Script $0 already running"
+  printf >&2 '%s\n' "ERROR: Скрипт $0 уже активен"
   exit 1
+else
+  date
 fi
 
 #Значения по-умолчанию, переопределяются значениями из файла frame.cfg в домашней папке пользователя либо в корне флэшки
@@ -44,9 +46,55 @@ WIFI_AP_PASSWORD_FILE="$HOME/user.dat"
 
 WIFI_SSID=''
 WIFI_PASSWORD=''
-WIFI_ERROR=''
 
 function internet { wget -q --spider http://google.com 2>/dev/null && chronyc tracking | grep -i status | grep -i normal | wc -l; }
+
+NET_DOWN=3
+NET_NOT_CONNECTED=2
+NET_REMOTE_FAIL=1
+NET_OK=0
+
+
+function get_connection_status {
+  wifi_net_cnt=$(sudo nmcli d wifi list | wc -l)
+  if [ "$wifi_net_cnt" -eq '0' ]
+  then
+    #no wifi network at all
+    echo $NET_DOWN
+    return
+  fi
+
+  wifi_connected=$(sudo nmcli d | grep -i wifi | grep -v -i loopback | grep -c -i -E -e '\sconnected\s')
+  gw=$(ip route | awk '/default/ {print $3; exit}')
+  gw_available=0
+  if [ "$wifi_connected" -gt "0" ] && [ -n "$gw" ]
+  then
+    gw_ping_lost=$(ping -i 0.002 -c 100 -w 10 -W 10.0 $gw | grep -i loss | cut -d ',' -f 3 | sed -E 's/^\s*([0-9\.]+)\%.*/\1/' | sed -E 's/\.[0-9]+//')
+    if [ -n "$gw_ping_lost" ] && [ "$gw_ping_lost" -lt "10" ]
+    then
+      gw_available=1
+    fi
+  fi
+
+  if [ "$gw_available" -eq "0" ]
+  then
+    #Not connected, worth trying to connect
+    echo $NET_NOT_CONNECTED
+    return
+  fi
+
+  google_available=$(wget --spider --timeout=10 http://google.com 2>/dev/null && echo 1)
+  ntp_available=$(chronyc tracking | grep -i status | grep -i normal | wc -l)
+
+  if [ "X$google_available" != "X1" ] || [ "X$ntp_available" == "X0" ]
+  then
+    #External resources not available
+    echo $NET_REMOTE_FAIL
+  else
+    #Everytyhing's fine
+    echo $NET_OK
+  fi
+}
 
 ##################### Mount USB ####################
 
@@ -138,56 +186,42 @@ done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.
 #Определим целевой статус, требуется ли подключение к существующей сети
 if [ "X$WIFI_SSID" != "X" ] && [ "X$WIFI_PASSWORD" != "X" ]
 then
-  #Проверим подключение к Интернету, если все уже работает - просто выходим
-  if [ "X$(internet)" != "X1" ]
+  st=$(get_connection_status)
+  if [ "$st" -eq "$NET_DOWN" ]
   then
-    echo "Интернет недоступен, подключаемся к сети WiFi '$WIFI_SSID'"
-    pkill nm-applet
-    res=$(sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV 2>&1)
-    echo "Res: $res"
-    if [[ $res == *"property is invalid"* ]] || [[ $res == *"not provided"* ]]
-    then
-      WIFI_ERROR="Wrong password $WIFI_PASSWORD"
-      WIFI_PASSWORD=''
-    elif [ "X$(internet)" != "X1" ]
-    then
-      network_available=$(sudo nmcli dev wifi | grep -E -e "\s$WIFI_SSID\s")
-      all_networks=$(sudo nmcli dev wifi | head -10)
-      if [ -z "$network_available" ] && [ -n "$all_networks" ]
-      then
-        WIFI_ERROR="Network $WIFI_SSID not found"
-        echo "All networks:"
-        echo "$all_networks"
-      else
-        echo "Интернет все еще недоступен, перегружаем NetworkManager"
-        sudo systemctl restart NetworkManager
-        sleep 5
-        if [ "X$(internet)" != "X1" ]
-        then
-          echo "Перезагрузка NetworkManager не помогла, повторно пытаемся подключиться к сети WiFi '$WIFI_SSID'"
-          res=$(sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV 2>&1)
-          echo "Res: $res"
-	        sleep 5
-	        if [ "X$(internet)" != "X1" ]
-	        then
-	          echo "Подключение так и не установлено. Возможно, поможет полная перезагрузка"
-	          echo "Доступные WiFi-сети:"
-	          sudo nmcli dev wifi list
-	          echo "Подключения:"
-            sudo nmcli con
-            echo "Устройства:"
-	          sudo nmcli dev
-	        fi
-        fi
-      fi
-    else
-      echo "Подключение к Интернету установлено"
-      WIFI_ERROR=''
-    fi
-  else
-    #echo "Интернет доступен, изменение настроек не требуется"
-    WIFI_ERROR=''
+    echo "Не найдено ни одной сети WiFi. Перегружаем Network Manager, после чего обновим статус подключения"
+    sudo systemctl restart NetworkManager
+    sleep 5
+    st=$(get_connection_status)
   fi
+
+  case "$st" in
+    $NET_DOWN)
+      echo "Сеть восстановить перезапуском Network Manager не удалось, возможно, потребуется перезагрузка"
+      ;;
+    $NET_NOT_CONNECTED)
+      echo "Сеть не подключена, пытаемся подключиться"
+      pkill nm-applet
+      res=$(sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV 2>&1)
+      echo "Res: $res"
+      if [[ $res == *"property is invalid"* ]] || [[ $res == *"not provided"* ]]
+      then
+        echo "Неправильный пароль $WIFI_PASSWORD"
+      else
+        st=$(get_connection_status)
+        echo "Состояние после подключения: $st"
+      fi
+      ;;
+    $NET_REMOTE_FAIL)
+      echo "Сеть подключена, но доступен только шлюз по-умолчанию. Вероятно, проблема у провайдера"
+      ;;
+    $NET_OK)
+      echo "Все отлично, внешние ресурсы доступны"
+      ;;
+    *)
+      echo "Неизвестный статус сети: $st"
+      ;;
+  esac
 fi
 
 read -r -d '' config << EOM
@@ -223,7 +257,7 @@ GEO_MAX_LEN=$GEO_MAX_LEN
 #Таймзона - можно указать название города (Kaliningrad,Moscow) или часовой пояс (GMT+3)
 TIMEZONE=$TIMEZONE
 
-#Ориентация экрана - normal (соответствует аппаратному положению матрицы), left, right, auto (приведение к горизонтальному)
+#Ориентация экрана - normal (соответствует аппаратному положению матрицу), left, right, auto (приведение к горизонтальному)
 SCREEN_ORIENTATION=$SCREEN_ORIENTATION
 
 #Конфигурация часов
@@ -241,8 +275,6 @@ SCHEDULE=$SCHEDULE
 #Параметры подключения к сети WiFi
 WIFI_SSID=$WIFI_SSID
 WIFI_PASSWORD=$WIFI_PASSWORD
-#Ошибка подключения к сети WiFi, автоматически обнуляется после успешного подключения
-WIFI_ERROR=$WIFI_ERROR
 EOM
 
 config_changed=0
