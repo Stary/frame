@@ -83,10 +83,10 @@ function get_connection_status {
     return
   fi
 
-  google_available=$(wget --spider --timeout=10 http://google.com 2>/dev/null && echo 1)
+  web_available=$(wget --spider --timeout=3 --tries=3 -q https://ya.ru 2>/dev/null && echo 1)
   ntp_available=$(chronyc tracking | grep -i status | grep -i normal | wc -l)
 
-  if [ "X$google_available" != "X1" ] || [ "X$ntp_available" == "X0" ]
+  if [ "X$web_available" != "X1" ] || [ "X$ntp_available" == "X0" ]
   then
     #External resources not available
     echo $NET_REMOTE_FAIL
