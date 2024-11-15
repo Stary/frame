@@ -22,6 +22,7 @@ TIMEZONE=Moscow
 SCREEN_ORIENTATION=auto
 SCHEDULE=05:00-CLOCK,07:00-FRAME,22:00-CLOCK,23:30-OFF
 UPDATE=no
+REBOOT=no
 
 CLOCK_COLOR=C8320A
 CLOCK_SIZE=560
@@ -144,6 +145,11 @@ then
   source "$TMP_CONFIG"
 fi
 
+if [ "X$REBOOT" == "Xyes" ]
+then
+  sudo reboot
+fi
+
 ##################################################################################################
 # Loading wifi connection details if any
 
@@ -262,6 +268,9 @@ VERSION=_VERSION_
 
 #Разовое автоматическое обновление, для разрешения выставить в yes. После применения автоматически сбрасывается в no
 UPDATE=no
+
+#Разовый автоматический перезапуск рамки, для разрешения выставить в yes. После применения автоматически сбрасывается в no
+REBOOT=no
 
 #Интервал между фотографиями в слайдшоу, в секундах
 DELAY=$DELAY
@@ -545,3 +554,5 @@ OFF)
   echo "Неизвестный режим '$target_mode'"
 esac
 
+
+#ToDo: Добавить вариант демонстрации свежезагруженных фоток
