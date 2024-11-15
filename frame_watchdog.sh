@@ -145,10 +145,6 @@ then
   source "$TMP_CONFIG"
 fi
 
-if [ "X$REBOOT" == "Xyes" ]
-then
-  sudo reboot
-fi
 
 ##################################################################################################
 # Loading wifi connection details if any
@@ -357,6 +353,12 @@ then
     cp -f $BIN_DIR/history* $USB_DIR
     rm -f $USB_DIR/changes*.txt
   fi
+fi
+
+if [ "X$REBOOT" == "Xyes" ]
+then
+  echo "В конфиге выставлен флаг перезагрузки, выполняем"
+  sudo reboot
 fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
