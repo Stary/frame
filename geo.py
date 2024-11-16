@@ -16,13 +16,13 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def init_logging():
-    logger = logging.getLogger('geo')
+def init_logging(log_name='geo'):
+    logger = logging.getLogger(log_name)
     logger.setLevel(LOG_LEVEL)
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    log_file = os.path.join(LOG_DIR if os.path.isdir(LOG_DIR) else '.', 'geo.log')
+    log_file = os.path.join(LOG_DIR if os.path.isdir(LOG_DIR) else '.', f'{log_name}.log')
     try:
         fh = logging.handlers.RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=10)
         fh.setLevel(LOG_LEVEL)
