@@ -14,10 +14,10 @@ import re
 from pyasn1_modules.rfc2985 import pkcs_9_at_challengePassword
 
 # Define variables
-YANDEX_DISK_PUBLIC_URL = ''  # Replace with your public folder URL
+YANDEX_DISK_PUBLIC_URL = '' # Replace with your public folder URL
 LOCAL_SYNC_DIR = 'yd'
 TEMP_DIR = 'yd_temp'
-REMOVE_DIR = 'remove'  # The folder in Yandex Disk where files are marked for deletion
+REMOVE_PATTERN = '__remove__'
 SYNC_INTERVAL = 300  # Sync every 5 minutes (in seconds)
 MAX_RETRIES = 3  # Maximum attempts for downloading a file
 KEYDB_HOST = '127.0.0.1'
@@ -208,7 +208,6 @@ def sync_remote_folder_to_local(public_url, target_folder, path=None, filter_mim
         #path фактически 0 относительный путь, хотя начинается с /, исправим это
         target_subfolder = os.path.join(target_folder, re.sub('^/','',path))
         logger.debug(f"join: {target_folder=} + {path=} => {target_subfolder=}")
-        os.makedirs(target_subfolder, exist_ok=True)
         params['path'] = path
     else:
         target_subfolder = target_folder
@@ -225,16 +224,28 @@ def sync_remote_folder_to_local(public_url, target_folder, path=None, filter_mim
         mime = item.get('mime_type', '')
         md5 = item.get('md5', '')
         size = item.get('size', '')
+        item_type = item.get('type', '')
         download_url = item.get('file', '')
         logger.debug(f"Item: {item}")
         if item.get('type','') == 'dir' and path != '':
             sync_remote_folder_to_local(public_url, target_folder, path)
-        elif filter_mime is None or mime=='' or filter_mime in mime:
+        elif item_type == 'file' and (filter_mime is None or mime=='' or filter_mime in mime):
             target_file = os.path.join(target_subfolder, name)
-            if check_local_file(target_file, size, md5):
+            if REMOVE_PATTERN in name:
+                name2 = name.replace(REMOVE_PATTERN, '')
+                target_file = os.path.join(target_subfolder, name2)
+                logger.info(f"File {target_file} marked for deletion")
+                if os.path.isfile(target_file):
+                    logger.info(f"Deleting {target_file} from the disk and from the index")
+                    os.unlink(target_file)
+                    index_local_file(target_file, remove=True)
+                else:
+                    logger.debug(f"File {target_file} doesn't exist")
+            elif check_local_file(target_file, size, md5):
                 logger.debug(f"File {target_file} has already been downloaded, verified and indexed")
             else:
                 logger.debug(f"Process file {target_file}")
+                os.makedirs(target_subfolder, exist_ok=True)
                 download_file(download_url, target_file, size, md5)
                 index_local_file(target_file, size=size, md5=md5)
 
