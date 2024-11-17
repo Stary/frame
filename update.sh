@@ -48,6 +48,7 @@ MAIN_SCRIPT="frame_watchdog.sh"
 INFO_SCRIPT="get_info.sh"
 GEO_SCRIPT="geo.py"
 PLACE_SCRIPT="get_place.py"
+YANDEX_DISK_SCRIPT="yd.py"
 WALLPAPER_SCRIPT="set_wallpaper.sh"
 UPDATE_SCRIPT="update.sh"
 VERSION_SCRIPT="get_version.sh"
@@ -177,6 +178,7 @@ then
   rsync -av $SRC_DIR/$INFO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$PLACE_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$YANDEX_DISK_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$WALLPAPER_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$HISTORY_FILE $BIN_DIR
   sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$HISTORY_FILE

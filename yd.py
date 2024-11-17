@@ -10,13 +10,16 @@ from logging import handlers
 import sys
 import traceback
 import re
+import random
+import string
 
 from pyasn1_modules.rfc2985 import pkcs_9_at_challengePassword
 
 # Define variables
-YANDEX_DISK_PUBLIC_URL = '' # Replace with your public folder URL
-LOCAL_SYNC_DIR = 'yd'
-TEMP_DIR = 'yd_temp'
+YANDEX_DISK_PUBLIC_URL = None
+LOCAL_SYNC_DIR = None
+TEMP_DIR = None
+TEMP_SUBDIR = '_temp'
 REMOVE_PATTERN = '__remove__'
 SYNC_INTERVAL = 300  # Sync every 5 minutes (in seconds)
 MAX_RETRIES = 3  # Maximum attempts for downloading a file
@@ -27,9 +30,8 @@ LOG_LEVEL = logging.DEBUG
 LOG_DIR = '/var/log/frame'
 
 # Ensure sync directories exist
-os.makedirs(LOCAL_SYNC_DIR, exist_ok=True)
-os.makedirs(TEMP_DIR, exist_ok=True)
-
+#os.makedirs(LOCAL_SYNC_DIR, exist_ok=True)
+#os.makedirs(TEMP_DIR, exist_ok=True)
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -53,6 +55,8 @@ def init_logging(log_name='yd'):
         logger.addHandler(fh)
     except Exception as ex:
         eprint(f"Exception occured while opening log file {log_file}: {str(ex)}")
+        #Без логов запускаться не будем
+        sys.exit(-1)
 
     return logger
 
@@ -65,8 +69,24 @@ def connect_redis():
         redis_connection = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
     except Exception as e:
         eprint(f"Exception: {traceback.format_exc()}")
+        #Активное подключение к Redis/KeyDB критичны для дальнейшей работы, без него - выходим
+        sys.exit(-1)
     return redis_connection
 
+
+def load_config(config_path):
+    global YANDEX_DISK_PUBLIC_URL
+    if os.path.isfile(config_path):
+        logger.debug(f"Loading config from {config_path}")
+        with open(config_path) as file:
+            for line in file:
+                m=re.match(r'^\s*([a-zA-Z0-9\-_.]+)\s*=\s*([a-zA-Z0-9\-_:./]+).*', line, flags=re.DOTALL | re.IGNORECASE)
+                if m is not None:
+                    logger.debug(f"Line: {m.group(1)}={m.group(2)}")
+                    if m.group(1) == 'YANDEX_DISK_PUBLIC_URL' and re.match(r'https://disk.yandex.ru/d/[a-z0-9]+',
+                                                                           m.group(2), flags=re.IGNORECASE):
+                        YANDEX_DISK_PUBLIC_URL = m.group(2)
+                        logger.info(f"Yandex disk public url found in config")
 
 # Calculate MD5 hash of a file
 def calculate_md5(file_path, chunk_size=8192):
@@ -106,6 +126,7 @@ def download_file(download_url, local_file_path, remote_file_size, remote_md5):
     if os.path.exists(temp_file_path):
         os.remove(temp_file_path)
         logger.error(f"Failed to download {local_file_path} after {MAX_RETRIES} attempts. Removed incomplete file.")
+
 
 def get_idx_rec(f):
     idx_rec_str = r.hget('index', f)
@@ -215,7 +236,7 @@ def sync_remote_folder_to_local(public_url, target_folder, path=None, filter_mim
 
     response = requests.get(api_url, params=params)
     response.raise_for_status()
-    logger.debug(f"{json.dumps(response.json(), indent=4, sort_keys=True, ensure_ascii=False)}")
+    #logger.debug(f"{json.dumps(response.json(), indent=4, sort_keys=True, ensure_ascii=False)}")
 
     items = response.json().get('_embedded', {}).get('items', [])
     for item in items:
@@ -254,6 +275,40 @@ logger = init_logging()
 r = connect_redis()
 
 #r.flushdb()
+
+logger.debug(f"{len(sys.argv)} {sys.argv}")
+
+if len(sys.argv) < 3:
+    eprint(f"Usage: {sys.argv[0]} path_to_frame.cfg path_to_images_folder")
+    sys.exit(-1)
+
+config_file=os.path.expanduser(sys.argv[1])
+if not os.path.isfile(config_file):
+    eprint(f"config file {config_file} doesn't exist")
+    sys.exit(-1)
+
+LOCAL_SYNC_DIR=os.path.expanduser(sys.argv[2])
+if not os.path.isdir(LOCAL_SYNC_DIR):
+    eprint(f"sync dir {LOCAL_SYNC_DIR} doesn't exist")
+    sys.exit(-1)
+
+load_config(config_file)
+
+#Probe sync dir if it is open for writing
+if LOCAL_SYNC_DIR is None or not os.path.isdir(LOCAL_SYNC_DIR) or not os.access(LOCAL_SYNC_DIR, os.W_OK):
+    eprint(f"Local sync dir {LOCAL_SYNC_DIR} doesn't exist or isn't writable")
+    sys.exit(-1)
+
+TEMP_DIR = os.path.join(LOCAL_SYNC_DIR, TEMP_SUBDIR)
+os.makedirs(TEMP_DIR, exist_ok=True)
+if not os.path.isdir(TEMP_DIR) or not os.access(TEMP_DIR, os.W_OK):
+    eprint(f"Temp dir {TEMP_DIR} doesn't exist or isn't writable")
+    sys.exit(-1)
+    #letters = string.ascii_lowercase
+    #random_name = ''.join(random.choice(letters) for i in range(16))
+
+
+logger.info(f"Starting sync to folder {LOCAL_SYNC_DIR} with temp dir {TEMP_DIR}")
 
 index_local_folder(LOCAL_SYNC_DIR)
 
