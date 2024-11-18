@@ -13,18 +13,23 @@ import re
 import random
 import string
 
-from pyasn1_modules.rfc2985 import pkcs_9_at_challengePassword
+from tenacity import sleep
+
+#from pyasn1_modules.rfc2985 import pkcs_9_at_challengePassword
 
 # Define variables
 YANDEX_DISK_PUBLIC_URL = None
 LOCAL_SYNC_DIR = None
 TEMP_DIR = None
 TEMP_SUBDIR = '_temp'
-REMOVE_PATTERN = '__remove__'
 SYNC_INTERVAL = 300  # Sync every 5 minutes (in seconds)
 MAX_RETRIES = 3  # Maximum attempts for downloading a file
 KEYDB_HOST = '127.0.0.1'
 KEYDB_PORT = 6379
+HTTP_TIMEOUT = 10.0
+MIN_TS = 1730000000
+LOCAL_INDEX_NAME='index'
+REMOTE_INDEX_NAME='remote_index'
 
 LOG_LEVEL = logging.DEBUG
 LOG_DIR = '/var/log/frame'
@@ -63,13 +68,13 @@ def init_logging(log_name='yd'):
 
 def connect_redis():
     redis_connection = None
+    redis_host = os.environ.get('REDIS_HOST', '127.0.0.1')
+    redis_port = int(os.environ.get('REDIS_PORT', 6379))
     try:
-        redis_host = os.environ.get('REDIS_HOST', '127.0.0.1')
-        redis_port = int(os.environ.get('REDIS_PORT', 6379))
-        redis_connection = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
+       redis_connection = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
     except Exception as e:
-        eprint(f"Exception: {traceback.format_exc()}")
-        #Активное подключение к Redis/KeyDB критичны для дальнейшей работы, без него - выходим
+        eprint(f"Failed connecting to KeyDB at {redis_host}:{redis_port}: {traceback.format_exc()}")
+        #Активное подключение к Redis/KeyDB критично для дальнейшей работы, без него - выходим
         sys.exit(-1)
     return redis_connection
 
@@ -88,6 +93,7 @@ def load_config(config_path):
                         YANDEX_DISK_PUBLIC_URL = m.group(2)
                         logger.info(f"Yandex disk public url found in config")
 
+
 # Calculate MD5 hash of a file
 def calculate_md5(file_path, chunk_size=8192):
     md5 = hashlib.md5()
@@ -101,25 +107,53 @@ def calculate_md5(file_path, chunk_size=8192):
 def download_file(download_url, local_file_path, remote_file_size, remote_md5):
     temp_file_path = os.path.join(TEMP_DIR, remote_md5)
 
-    attempts = 0
-    while attempts < MAX_RETRIES:
-        headers = {"Range": f"bytes={os.path.getsize(temp_file_path)}-"} if os.path.exists(temp_file_path) else {}
-        with requests.get(download_url, headers=headers, stream=True) as response:
-            response.raise_for_status()
-            with open(temp_file_path, 'ab') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+    local_dir = os.path.dirname(local_file_path)
+    logger.debug(f"Downloading {local_file_path} to {local_dir}")
+    os.makedirs(local_dir, exist_ok=True)
 
-        if os.path.getsize(temp_file_path) == remote_file_size:
-            local_md5 = calculate_md5(temp_file_path)
-            if local_md5 == remote_md5:
-                os.rename(temp_file_path, local_file_path)
-                logger.info(f"Downloaded and verified: {local_file_path} with MD5: {local_md5}")
-                return
+    if not os.path.isdir(local_dir):
+        eprint(f"Can't create folder {local_dir}")
+        sys.exit(-1)
+
+    attempts = 0
+    fatal = False
+
+    while attempts < MAX_RETRIES and not fatal:
+        try:
+            headers = {}
+            if os.path.isfile(temp_file_path):
+                temp_file_size = os.path.getsize(temp_file_path)
+                if temp_file_size >= remote_file_size:
+                    os.unlink(temp_file_path)
+                    logger.error(f"Temporary file's broken as its size {temp_file_size} is already equal or larger than target's one {remote_file_size}")
+                else:
+                    headers = {"Range": f"bytes={os.path.getsize(temp_file_path)}-"}
+            with requests.get(download_url, headers=headers, stream=True, timeout=HTTP_TIMEOUT) as response:
+                response.raise_for_status()
+                with open(temp_file_path, 'ab') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+
+            if os.path.getsize(temp_file_path) == remote_file_size:
+                local_md5 = calculate_md5(temp_file_path)
+                if local_md5 == remote_md5:
+                    os.rename(temp_file_path, local_file_path)
+                    logger.info(f"Downloaded and verified: {local_file_path} with MD5: {local_md5}")
+                    return True
+                else:
+                    logger.error(f"MD5 mismatch for {local_file_path}. Retrying download from scratch, temp file will be removed")
+                    os.unlink(temp_file_path)
             else:
-                logger.error(f"MD5 mismatch for {local_file_path}. Retrying download.")
-        else:
-            logger.error(f"File size mismatch for {local_file_path}. Retrying download.")
+                logger.error(f"File size mismatch for {local_file_path}. Retrying download.")
+        except Exception as e:
+            logger.error(f"exception name={type(e).__name__}, args={e.args}")
+            logger.error(f"Exception occurred while getting {local_file_path}: {traceback.format_exc()}")
+            if type(e).__name__ == 'ConnectionError':
+                fatal = True
+            else:
+                sleep_for = 10 * 2 ** attempts
+                logger.debug(f"Sleeping for {sleep_for:.1f} sec. before attempt N{attempts+2}")
+                sleep(10 * 2 ** attempts)
 
         attempts += 1
 
@@ -127,18 +161,24 @@ def download_file(download_url, local_file_path, remote_file_size, remote_md5):
         os.remove(temp_file_path)
         logger.error(f"Failed to download {local_file_path} after {MAX_RETRIES} attempts. Removed incomplete file.")
 
+    return False
 
-def get_idx_rec(f):
-    idx_rec_str = r.hget('index', f)
-    if idx_rec_str is not None:
-        idx_rec = json.loads(idx_rec_str)
-        return idx_rec
-    else:
-        return None
+
+def get_idx_rec(f, index_name=LOCAL_INDEX_NAME):
+    try:
+        idx_rec_str = r.hget(index_name, f)
+        if idx_rec_str is not None:
+            idx_rec = json.loads(idx_rec_str)
+            return idx_rec
+    except Exception as e:
+        pass
+
+    return None
 
 
 def index_local_file(f, force=False, remove=False, size=None, md5=None):
     logger.debug(f"In index_local_file: {f=}, {force=}, {remove=}, {size=}, {md5=}")
+
     if remove:
         logger.debug(f"Removing {f} from the index")
         r.hdel('index', f)
@@ -178,7 +218,7 @@ def index_local_file(f, force=False, remove=False, size=None, md5=None):
 def check_local_file(f, size, md5):
     logger.debug(f"Check if file {f} exists and its size and md5 are equal {size} and {md5}")
     if f is not None and os.path.isfile(f):
-        idx_rec = get_idx_rec(f)
+        idx_rec = get_idx_rec(f, LOCAL_INDEX_NAME)
         if idx_rec is not None and isinstance(idx_rec, dict):
             #idx_mtime = idx_rec.get('mtime', None)
             idx_size = idx_rec.get('size', None)
@@ -192,6 +232,10 @@ def check_local_file(f, size, md5):
 
 def index_local_folder(p):
     abs_path=os.path.abspath(p)
+
+    #if '.DS_Store' in p:
+    #    return
+
     if os.path.isfile(abs_path):
         logger.debug(f"Indexing file {abs_path}")
         index_local_file(abs_path)
@@ -204,9 +248,10 @@ def index_local_folder(p):
         #Unknown type
         pass
 
-def purge_local_folder_index(p):
+
+def purge_local_index(p):
     abs_path=os.path.abspath(p)
-    for f in r.hkeys('index'):
+    for f in r.hkeys(LOCAL_INDEX_NAME):
         logger.debug(f'{f}')
         if abs_path in f and not os.path.isfile(f):
             logger.info(f'File {f} is not found within {p}, removing from the index')
@@ -234,7 +279,52 @@ def sync_remote_folder_to_local(public_url, target_folder, path=None, filter_mim
         target_subfolder = target_folder
     logger.debug(f"Syncing remote dir {path} to {target_subfolder}")
 
-    response = requests.get(api_url, params=params)
+    response = requests.get(api_url, params=params, timeout=HTTP_TIMEOUT)
+    response.raise_for_status()
+    #logger.debug(f"{json.dumps(response.json(), indent=4, sort_keys=True, ensure_ascii=False)}")
+
+    items = response.json().get('_embedded', {}).get('items', [])
+    for item in items:
+        name = item.get('name', '')
+        path = item.get('path', '')
+        mime = item.get('mime_type', '')
+        md5 = item.get('md5', '')
+        size = item.get('size', '')
+        item_type = item.get('type', '')
+        download_url = item.get('file', '')
+        #logger.debug(f"Item: {item}")
+        if item.get('type','') == 'dir' and path != '':
+            sync_remote_folder_to_local(public_url, target_folder, path)
+        elif item_type == 'file' and (filter_mime is None or mime=='' or filter_mime in mime):
+            target_file = os.path.join(target_subfolder, name)
+#            if REMOVE_PATTERN in name:
+#                name2 = name.replace(REMOVE_PATTERN, '')
+#                target_file = os.path.join(target_subfolder, name2)
+#                logger.info(f"File {target_file} marked for deletion")
+#                if os.path.isfile(target_file):
+#                    logger.info(f"Deleting {target_file} from the disk and from the index")
+#                    os.unlink(target_file)
+#                    index_local_file(target_file, remove=True)
+#                else:
+#                    logger.debug(f"File {target_file} doesn't exist")
+            if check_local_file(target_file, size, md5):
+                logger.debug(f"File {target_file} has already been downloaded, verified and indexed")
+            else:
+                logger.debug(f"Process file {target_file}")
+                os.makedirs(target_subfolder, exist_ok=True)
+                if download_file(download_url, target_file, size, md5):
+                    index_local_file(target_file, size=size, md5=md5)
+
+def index_remote_folder(public_url, path=None):
+    global logger
+
+    api_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
+    params = {'public_key': public_url, 'fields': '_embedded.items.name,_embedded.items.md5,_embedded.items.md5,' +\
+        '_embedded.items.size,_embedded.items.type,_embedded.items.mime_type,_embedded.items.path,_embedded.items.file' }
+    if path is not None:
+        params['path'] = path
+
+    response = requests.get(api_url, params=params, timeout=HTTP_TIMEOUT)
     response.raise_for_status()
     #logger.debug(f"{json.dumps(response.json(), indent=4, sort_keys=True, ensure_ascii=False)}")
 
@@ -249,27 +339,107 @@ def sync_remote_folder_to_local(public_url, target_folder, path=None, filter_mim
         download_url = item.get('file', '')
         logger.debug(f"Item: {item}")
         if item.get('type','') == 'dir' and path != '':
-            sync_remote_folder_to_local(public_url, target_folder, path)
-        elif item_type == 'file' and (filter_mime is None or mime=='' or filter_mime in mime):
-            target_file = os.path.join(target_subfolder, name)
-            if REMOVE_PATTERN in name:
-                name2 = name.replace(REMOVE_PATTERN, '')
-                target_file = os.path.join(target_subfolder, name2)
-                logger.info(f"File {target_file} marked for deletion")
-                if os.path.isfile(target_file):
-                    logger.info(f"Deleting {target_file} from the disk and from the index")
-                    os.unlink(target_file)
-                    index_local_file(target_file, remove=True)
-                else:
-                    logger.debug(f"File {target_file} doesn't exist")
-            elif check_local_file(target_file, size, md5):
-                logger.debug(f"File {target_file} has already been downloaded, verified and indexed")
-            else:
-                logger.debug(f"Process file {target_file}")
-                os.makedirs(target_subfolder, exist_ok=True)
-                download_file(download_url, target_file, size, md5)
-                index_local_file(target_file, size=size, md5=md5)
+            index_remote_folder(public_url, path)
+        elif item_type == 'file':
+            rel_path = re.sub(r'^/', '', str(path))
+            idx_rec = {'size': size, 'md5': md5, 'ts': time.time(), 'mime': mime, 'download_url': download_url}
+            r.hset(REMOTE_INDEX_NAME, rel_path, json.dumps(idx_rec))
+            logger.debug(f"Remote index: {rel_path} => {idx_rec}")
 
+
+def purge_remote_index(ts):
+    if ts is not None and ts > MIN_TS:
+        for f in r.hkeys(REMOTE_INDEX_NAME):
+            idx_rec = get_idx_rec(f, REMOTE_INDEX_NAME)
+            logger.debug(f"{f} => {idx_rec}")
+            if idx_rec is not None and isinstance(idx_rec, dict):
+                if 'ts' in idx_rec and idx_rec['ts'] != '':
+                    rec_ts = float(idx_rec['ts'])
+                    if rec_ts > MIN_TS and rec_ts < ts:
+                        logger.info(f"Removing stale record {f} from the remote index {ts-rec_ts}")
+                        r.hdel('remote_index', f)
+
+
+def sync_remote_to_local_folder(target_folder, filter_mime=''):
+    if not os.path.isdir(target_folder):
+        eprint(f"Local target folder {target_folder} doesn't exist, abort syncing")
+        sys.exit(-1)
+
+    download_list = list()
+    delete_list = list()
+
+    for f in sorted(set(r.hkeys(REMOTE_INDEX_NAME)).union(
+                   [re.sub(r'^/', '', local_f[len(target_folder):]) for local_f in r.hkeys(LOCAL_INDEX_NAME) if local_f.startswith(target_folder)])):
+        local_f = os.path.join(target_folder, f)
+        local_idx_rec = get_idx_rec(local_f, LOCAL_INDEX_NAME)
+        remote_idx_rec = get_idx_rec(f, REMOTE_INDEX_NAME)
+        logger.debug(f"Remote {f}: {remote_idx_rec}")
+        logger.debug(f"Local {local_f}: {local_idx_rec}")
+        if filter_mime != '' and remote_idx_rec is not None and \
+                'mime' in remote_idx_rec and filter_mime not in remote_idx_rec['mime']:
+            logger.debug(f"Mime filter {filter_mime} doesn't match file's type {remote_idx_rec['mime']}")
+            continue
+
+        if remote_idx_rec is not None:
+            remote_idx_rec['local_f'] = local_f
+
+        if local_idx_rec is not None:
+            local_idx_rec['local_f'] = local_f
+
+        if remote_idx_rec is not None and local_idx_rec is not None:
+            if local_idx_rec.get('size', 'X') == remote_idx_rec.get('size', 'Y') and \
+                    local_idx_rec.get('md5', 'X') == remote_idx_rec.get('md5', 'Y'):
+                logger.info(f"LD == RD: {f}")
+            else:
+                logger.info(f"LD != RD: {f}")
+                download_list.append(remote_idx_rec)
+        elif remote_idx_rec is not None and local_idx_rec is None:
+            logger.info(f"L_ != RD: {f}")
+            download_list.append(remote_idx_rec)
+        elif remote_idx_rec is None and local_idx_rec is not None:
+            logger.info(f"LD != R_: {f}")
+            delete_list.append(local_idx_rec)
+        else:
+            logger.error(f"L_ != R_: {f}")
+
+    for idx_rec in download_list:
+        logger.info(f"Download {idx_rec}")
+        if download_file(idx_rec['download_url'], idx_rec['local_f'], idx_rec['size'], idx_rec['md5']):
+            index_local_file(idx_rec['local_f'], size=idx_rec['size'], md5=idx_rec['md5'])
+
+    for idx_rec in delete_list:
+        logger.info(f"Delete {idx_rec}")
+        if os.unlink(idx_rec['local_f']):
+            index_local_file(idx_rec['local_f'], remove=True)
+
+#    for local_f in r.hkeys(LOCAL_INDEX_NAME):
+#        if local_f.startswith(target_folder):
+#            f = re.sub(r'^/', '', local_f[len(target_folder):])
+#            logger.debug(f"Checking if there is remote file {f} exists for local file {local_f}")
+#            local_idx_rec =
+
+
+def delete_empty_folders(root):
+    deleted = set()
+
+    for current_dir, subdirs, files in os.walk(root, topdown=False):
+        logger.debug(f"{current_dir=} {subdirs=} files_cnt={len(files)}")
+        still_has_subdirs = False
+        for subdir in subdirs:
+            if os.path.join(current_dir, subdir) not in deleted:
+                still_has_subdirs = True
+                #logger.debug(f"{current_dir=} still has subdirs: {subdir}")
+                break
+
+        if not any(files) and not still_has_subdirs and TEMP_SUBDIR not in current_dir:
+            logger.debug(f"Delete empty dir {current_dir}")
+            os.rmdir(current_dir)
+            deleted.add(current_dir)
+
+    return deleted
+
+
+start_ts = time.time()
 
 logger = init_logging()
 r = connect_redis()
@@ -312,6 +482,14 @@ logger.info(f"Starting sync to folder {LOCAL_SYNC_DIR} with temp dir {TEMP_DIR}"
 
 index_local_folder(LOCAL_SYNC_DIR)
 
-purge_local_folder_index(LOCAL_SYNC_DIR)
+purge_local_index(LOCAL_SYNC_DIR)
 
-sync_remote_folder_to_local(YANDEX_DISK_PUBLIC_URL, LOCAL_SYNC_DIR, filter_mime='image/')
+index_remote_folder(YANDEX_DISK_PUBLIC_URL)
+
+purge_remote_index(start_ts)
+
+sync_remote_to_local_folder(LOCAL_SYNC_DIR, filter_mime='image')
+
+delete_empty_folders(LOCAL_SYNC_DIR)
+
+#sync_remote_folder_to_local(YANDEX_DISK_PUBLIC_URL, LOCAL_SYNC_DIR, filter_mime='image/')
