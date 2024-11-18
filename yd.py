@@ -258,63 +258,6 @@ def purge_local_index(p):
             index_local_file(f, remove=True)
 
 
-def sync_remote_folder_to_local(public_url, target_folder, path=None, filter_mime=None):
-    global logger
-    if not os.path.isdir(target_folder):
-        logger.error(f"Target folder {target_folder} doesn't exist, can't sync")
-        return
-    else:
-        target_folder = os.path.abspath(target_folder)
-        logger.info(f"Sync target base is {target_folder}")
-
-    api_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
-    params = {'public_key': public_url, 'fields': '_embedded.items.name,_embedded.items.md5,_embedded.items.md5,' +\
-        '_embedded.items.size,_embedded.items.type,_embedded.items.mime_type,_embedded.items.path,_embedded.items.file' }
-    if path is not None:
-        #path фактически 0 относительный путь, хотя начинается с /, исправим это
-        target_subfolder = os.path.join(target_folder, re.sub('^/','',path))
-        logger.debug(f"join: {target_folder=} + {path=} => {target_subfolder=}")
-        params['path'] = path
-    else:
-        target_subfolder = target_folder
-    logger.debug(f"Syncing remote dir {path} to {target_subfolder}")
-
-    response = requests.get(api_url, params=params, timeout=HTTP_TIMEOUT)
-    response.raise_for_status()
-    #logger.debug(f"{json.dumps(response.json(), indent=4, sort_keys=True, ensure_ascii=False)}")
-
-    items = response.json().get('_embedded', {}).get('items', [])
-    for item in items:
-        name = item.get('name', '')
-        path = item.get('path', '')
-        mime = item.get('mime_type', '')
-        md5 = item.get('md5', '')
-        size = item.get('size', '')
-        item_type = item.get('type', '')
-        download_url = item.get('file', '')
-        #logger.debug(f"Item: {item}")
-        if item.get('type','') == 'dir' and path != '':
-            sync_remote_folder_to_local(public_url, target_folder, path)
-        elif item_type == 'file' and (filter_mime is None or mime=='' or filter_mime in mime):
-            target_file = os.path.join(target_subfolder, name)
-#            if REMOVE_PATTERN in name:
-#                name2 = name.replace(REMOVE_PATTERN, '')
-#                target_file = os.path.join(target_subfolder, name2)
-#                logger.info(f"File {target_file} marked for deletion")
-#                if os.path.isfile(target_file):
-#                    logger.info(f"Deleting {target_file} from the disk and from the index")
-#                    os.unlink(target_file)
-#                    index_local_file(target_file, remove=True)
-#                else:
-#                    logger.debug(f"File {target_file} doesn't exist")
-            if check_local_file(target_file, size, md5):
-                logger.debug(f"File {target_file} has already been downloaded, verified and indexed")
-            else:
-                logger.debug(f"Process file {target_file}")
-                os.makedirs(target_subfolder, exist_ok=True)
-                if download_file(download_url, target_file, size, md5):
-                    index_local_file(target_file, size=size, md5=md5)
-
 def index_remote_folder(public_url, path=None):
     global logger
 
@@ -337,7 +280,7 @@ def index_remote_folder(public_url, path=None):
         size = item.get('size', '')
         item_type = item.get('type', '')
         download_url = item.get('file', '')
-        logger.debug(f"Item: {item}")
+        #logger.debug(f"Item: {item}")
         if item.get('type','') == 'dir' and path != '':
             index_remote_folder(public_url, path)
         elif item_type == 'file':
@@ -412,18 +355,12 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
         if os.unlink(idx_rec['local_f']):
             index_local_file(idx_rec['local_f'], remove=True)
 
-#    for local_f in r.hkeys(LOCAL_INDEX_NAME):
-#        if local_f.startswith(target_folder):
-#            f = re.sub(r'^/', '', local_f[len(target_folder):])
-#            logger.debug(f"Checking if there is remote file {f} exists for local file {local_f}")
-#            local_idx_rec =
-
 
 def delete_empty_folders(root):
     deleted = set()
 
     for current_dir, subdirs, files in os.walk(root, topdown=False):
-        logger.debug(f"{current_dir=} {subdirs=} files_cnt={len(files)}")
+        #logger.debug(f"{current_dir=} {subdirs=} files_cnt={len(files)}")
         still_has_subdirs = False
         for subdir in subdirs:
             if os.path.join(current_dir, subdir) not in deleted:
@@ -492,4 +429,3 @@ sync_remote_to_local_folder(LOCAL_SYNC_DIR, filter_mime='image')
 
 delete_empty_folders(LOCAL_SYNC_DIR)
 
-#sync_remote_folder_to_local(YANDEX_DISK_PUBLIC_URL, LOCAL_SYNC_DIR, filter_mime='image/')
