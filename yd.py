@@ -4,12 +4,12 @@ import time
 import json
 import hashlib
 import redis
-from urllib.parse import urljoin
 import logging
 from logging import handlers
 import sys
 import traceback
 import re
+import shutil
 import random
 import string
 
@@ -26,6 +26,7 @@ HTTP_TIMEOUT = 10.0
 MIN_TS = 1730000000
 LOCAL_INDEX_NAME='index'
 REMOTE_INDEX_NAME='remote_index'
+MD5_INDEX_NAME='md5_index'
 
 LOG_LEVEL = logging.DEBUG
 LOG_DIR = '/var/log/frame'
@@ -119,19 +120,25 @@ def download_file(download_url, local_file_path, remote_file_size, remote_md5):
 
     while attempts < MAX_RETRIES and not fatal:
         try:
-            headers = {}
-            if os.path.isfile(temp_file_path):
-                temp_file_size = os.path.getsize(temp_file_path)
-                if temp_file_size >= remote_file_size:
-                    os.unlink(temp_file_path)
-                    logger.error(f"Temporary file's broken as its size {temp_file_size} is already equal or larger than target's one {remote_file_size}")
-                else:
-                    headers = {"Range": f"bytes={os.path.getsize(temp_file_path)}-"}
-            with requests.get(download_url, headers=headers, stream=True, timeout=HTTP_TIMEOUT) as response:
-                response.raise_for_status()
-                with open(temp_file_path, 'ab') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
+
+            local_copy = r.hget(MD5_INDEX_NAME, remote_md5)
+            if local_copy is not None and os.path.isfile(local_copy):
+                logger.info(f"Found local copy {local_copy} of the file {local_file_path}")
+                shutil.copy(local_copy, temp_file_path)
+            else:
+                headers = {}
+                if os.path.isfile(temp_file_path):
+                    temp_file_size = os.path.getsize(temp_file_path)
+                    if temp_file_size >= remote_file_size:
+                        os.unlink(temp_file_path)
+                        logger.error(f"Temporary file's broken as its size {temp_file_size} is already equal or larger than target's one {remote_file_size}")
+                    else:
+                        headers = {"Range": f"bytes={os.path.getsize(temp_file_path)}-"}
+                with requests.get(download_url, headers=headers, stream=True, timeout=HTTP_TIMEOUT) as response:
+                    response.raise_for_status()
+                    with open(temp_file_path, 'ab') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
 
             if os.path.getsize(temp_file_path) == remote_file_size:
                 local_md5 = calculate_md5(temp_file_path)
@@ -180,7 +187,10 @@ def index_local_file(f, force=False, remove=False, size=None, md5=None):
 
     if remove:
         logger.debug(f"Removing {f} from the index")
-        r.hdel('index', f)
+        idx_rec = get_idx_rec(f)
+        if idx_rec is not None:
+            r.hdel(LOCAL_INDEX_NAME, f)
+            r.hdel(MD5_INDEX_NAME, idx_rec['md5'])
     else:
         if os.path.isfile(f):
             logger.debug(f"Adding {f} to the index")
@@ -208,7 +218,8 @@ def index_local_file(f, force=False, remove=False, size=None, md5=None):
                 idx_mtime != f_mtime or idx_size != f_size or force:
                 f_md5 = md5 if md5 is not None else calculate_md5(f)
                 idx_rec = {'mtime': f_mtime, 'size': f_size, 'md5': f_md5, 'ts': time.time()}
-                r.hset('index', f, json.dumps(idx_rec))
+                r.hset(LOCAL_INDEX_NAME, f, json.dumps(idx_rec))
+                r.hset(MD5_INDEX_NAME, f_md5, f)
                 logger.debug(f'set index({f}) = {idx_rec} ')
         else:
             logger.error(f"Can't add {f} to the index as it is not a file")
@@ -232,9 +243,6 @@ def check_local_file(f, size, md5):
 def index_local_folder(p):
     abs_path=os.path.abspath(p)
 
-    #if '.DS_Store' in p:
-    #    return
-
     if os.path.isfile(abs_path):
         logger.debug(f"Indexing file {abs_path}")
         index_local_file(abs_path)
@@ -244,8 +252,6 @@ def index_local_folder(p):
             index_local_folder(os.path.join(abs_path,f))
     else:
         logger.debug(f"Unknown type: {abs_path}")
-        #Unknown type
-        pass
 
 
 def purge_local_index(p):
@@ -395,7 +401,10 @@ if not os.path.isfile(config_file):
 
 LOCAL_SYNC_DIR=os.path.expanduser(sys.argv[2])
 if not os.path.isdir(LOCAL_SYNC_DIR):
-    eprint(f"sync dir {LOCAL_SYNC_DIR} doesn't exist")
+    os.makedirs(LOCAL_SYNC_DIR, exist_ok=True)
+
+if not os.path.isdir(LOCAL_SYNC_DIR):
+    eprint(f"sync dir {LOCAL_SYNC_DIR} doesn't exist and can't be created")
     sys.exit(-1)
 
 load_config(config_file)
@@ -433,7 +442,6 @@ delete_empty_folders(LOCAL_SYNC_DIR)
 #ToDo: Добавить параметр, разрешающий приоритет демонстрации свежезагруженных фоток
 #ToDo: Перенести загрузку логотипа и демо-подборки на Я.Д
 #ToDo: Уведомление через телеграм об ошибках
-#ToDo: Оптимизация переноса - при появлении нового файла проверять, нет ли локального с таким же md5
 
 
 
