@@ -48,7 +48,9 @@ MAIN_SCRIPT="frame_watchdog.sh"
 INFO_SCRIPT="get_info.sh"
 GEO_SCRIPT="geo.py"
 PLACE_SCRIPT="get_place.py"
-YANDEX_DISK_SCRIPT="yd.py"
+YANDEX_DISK_SYNC_SCRIPT="yd.py"
+YANDEX_DISK_DOWNLOAD_SCRIPT="download_yd.sh"
+YANDEX_DISK_PUBLIC_URL="https://disk.yandex.ru/d/8Jq0RAsDYAUIww"
 WALLPAPER_SCRIPT="set_wallpaper.sh"
 UPDATE_SCRIPT="update.sh"
 VERSION_SCRIPT="get_version.sh"
@@ -147,7 +149,8 @@ then
   sudo mkdir -p "$DEMO_DIR"
   sudo chown -R $USER:$MEDIA_USER "$DEMO_DIR"
   sudo chmod 775 "$DEMO_DIR"
-  wget -O $TMP_DEMO_ZIP "$STATIC_BASE_URL/$DEMO_ZIP"
+  #wget -O $TMP_DEMO_ZIP "$STATIC_BASE_URL/$DEMO_ZIP"
+  $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$DEMO_ZIP" "$TMP_DEMO_ZIP"
   if [ -s "$TMP_DEMO_ZIP" ]
   then
     unzip -d "$DEMO_DIR" $TMP_DEMO_ZIP
@@ -178,7 +181,8 @@ then
   rsync -av $SRC_DIR/$INFO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$PLACE_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
-  rsync -av $SRC_DIR/$YANDEX_DISK_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$YANDEX_DISK_SYNC_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$YANDEX_DISK_DOWNLOAD_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$WALLPAPER_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$HISTORY_FILE $BIN_DIR
   sed -i "s/_VERSION_/$VERSION/" $BIN_DIR/$HISTORY_FILE
@@ -205,7 +209,8 @@ rsync -av $SRC_DIR/$CONKY_FONT $CONKY_CONF_DIR
 target_file='/usr/share/plymouth/themes/orangepi/watermark.png'
 target_md5=$(md5sum "$target_file" | cut -d ' ' -f 1)
 
-source_url='https://quietharbor.net/static/watermark.png'
+#source_url='https://quietharbor.net/static/watermark.png'
+source_file='watermark.png'
 source_md5='bf7c2d23aa96006dc8e4cedb44c93bf1'
 
 tmp_file='/tmp/watermark.png'
@@ -216,7 +221,8 @@ tmp_file='/tmp/watermark.png'
 if [ "X$source_md5" != "X$target_md5" ]
 then
   echo "Source MD5: $source_md5 != Target MD5: $target_md5"
-  wget -O "$tmp_file" "$source_url"
+  #wget -O "$tmp_file" "$source_url"
+  $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$source_file" "$TMP_FILE"
   tmp_md5=$(md5sum "$tmp_file" | cut -d ' ' -f 1)
   if [ "X$tmp_md5" == "X$source_md5" ]
   then
