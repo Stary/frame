@@ -471,7 +471,7 @@ r = connect_redis()
 if check_process():
     logger.info('There are no other active instances of the script, execution permitted')
 else:
-    logger.error('There are other active instances of the script, leaving')
+    eprint('There are other active instances of the script, leaving')
     leave(-1)
 
 #r.flushdb()
