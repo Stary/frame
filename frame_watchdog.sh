@@ -13,6 +13,7 @@ WIFI_SSID=''
 WIFI_PASSWORD=''
 DELAY=55.0
 RANDOM_ORDER=no
+RECENT_MINUTES_FIRST=''
 CONFIG=frame.cfg
 SLIDESHOW_DISPLAY=:0
 FONT_DIR=/usr/share/fonts/truetype/freefont/
@@ -280,6 +281,9 @@ RESTART_SLIDESHOW_AFTER=$RESTART_SLIDESHOW_AFTER
 #Порядок смены слайдов. yes - случайный, no - сортировка по имени файла, но со случайным начальным файлом
 RANDOM_ORDER=$RANDOM_ORDER
 
+#Начинать слайдшоу с фотографий, загруженных за последние Х минут
+RECENT_MINUTES_FIRST=$RECENT_MINUTES_FIRST
+
 #Актуально только для многомониторных инсталляций, по-умолчанию значение :0
 SLIDESHOW_DISPLAY=$SLIDESHOW_DISPLAY
 
@@ -477,8 +481,12 @@ FRAME)
         then
           IMAGES_DIR=$d
           echo "Каталог с фото: $IMAGES_DIR"
-          PLAYLIST="$IMAGES_DIR/play.lst"
-          cat $TMP_PLAYLIST > $PLAYLIST
+          TMP_IMAGES_DIR="/tmp/frame/$IMAGES_DIR"
+          mkdir -p "$TMP_IMAGES_DIR"
+          PLAYLIST="$TMP_IMAGES_DIR/play.lst"
+          cat "$TMP_PLAYLIST" > "$PLAYLIST"
+          #Удалим старую версию списка
+          unlink "$IMAGES_DIR/play.lst"
           break
         fi
       fi
@@ -507,7 +515,10 @@ FRAME)
       fi
     fi
 
-    ROTATELIST="$IMAGES_DIR/processed.lst"
+
+    #Удалим старую версию списка
+    unlink "$IMAGES_DIR/processed.lst"
+    ROTATELIST="$TMP_IMAGES_DIR/processed.lst"
     touch $ROTATELIST
     diff=$(diff $PLAYLIST $ROTATELIST)
     if [ -n "$diff" ]
