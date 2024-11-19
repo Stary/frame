@@ -32,6 +32,7 @@ CLOCK_VOFFSET=320
 USB_DIR=/media/usb
 BIN_DIR=$HOME/bin
 LOG_DIR=/var/log/frame
+YANDEX_DISK_SYNC_SCRIPT='yd.py'
 CONKY_CONF=$HOME/.config/conky/conky.conf
 CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
 
@@ -348,6 +349,27 @@ then
   sed "s/_CLOCK_SIZE_/$CLOCK_SIZE/" |\
   sed "s/_CLOCK_OFFSET_/$CLOCK_OFFSET/" |\
   sed "s/_CLOCK_VOFFSET_/$CLOCK_VOFFSET/" > "$CONKY_CONF"
+
+  ############ Настройка периодического задания для запуска синхронизации с Яндекс-Диском ##################
+  if [ -n "$YANDEX_DISK_PUBLIC_URL" ] && [ -n "$WIFI_SSID" ]
+  then
+    target_crontab_line="*/5 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $IMAGES_DIR/yandex >> $LOG_DIR/cron.log 2>&1"
+  else
+    target_crontab_line=""
+  fi
+  cur_crontab_line=$(crontab -l 2>/dev/null | grep $YANDEX_DISK_SYNC_SCRIPT)
+
+  if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
+  then
+    if [ -n "$target_crontab_line" ]
+    then
+      echo "Switching on sync with Yandex Disk to folder $IMAGES_DIR/yandex"
+      (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
+    else
+      echo "Switching off sync with Yandex Disk"
+      crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT | crontab -l
+    fi
+  fi
 fi
 
 if [ "$USB_READY" -gt "0" ]
@@ -408,6 +430,7 @@ else
     sudo ln -f -s $TZFILE_NEW /etc/localtime
     date
   fi
+
 
   #############  Определение текущего режима ################################################
 
