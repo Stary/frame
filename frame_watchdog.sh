@@ -489,7 +489,7 @@ FRAME)
     ############ Настройка периодического задания для запуска синхронизации с Яндекс-Диском ##################
     if [ -n "$YANDEX_DISK_PUBLIC_URL" ] && [ -n "$WIFI_SSID" ]
     then
-      target_crontab_line="*/5 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $IMAGES_DIR/yandex >> $LOG_DIR/cron.log 2>&1"
+      target_crontab_line="*/15 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $IMAGES_DIR/yandex.disk >> $LOG_DIR/cron.log 2>&1"
     else
       target_crontab_line=""
     fi
@@ -510,7 +510,7 @@ FRAME)
     ROTATELIST="$IMAGES_DIR/processed.lst"
     touch $ROTATELIST
     diff=$(diff $PLAYLIST $ROTATELIST)
-    if [ ! -z "$diff" ]
+    if [ -n "$diff" ]
     then
       PID=$(pgrep find)
       if [ -z "$PID" ]
