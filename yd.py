@@ -1,4 +1,5 @@
 import os
+import signal
 import requests
 import time
 import json
@@ -28,12 +29,12 @@ LOCAL_INDEX_NAME='index'
 REMOTE_INDEX_NAME='remote_index'
 MD5_INDEX_NAME='md5_index'
 
+MAX_TIME_FROM_KEEPALIVE=600
+MAX_TIME_FROM_START=7200
+
 LOG_LEVEL = logging.DEBUG
 LOG_DIR = '/var/log/frame'
 
-# Ensure sync directories exist
-#os.makedirs(LOCAL_SYNC_DIR, exist_ok=True)
-#os.makedirs(TEMP_DIR, exist_ok=True)
 
 def eprint(*args, **kwargs):
     global logger
@@ -41,6 +42,12 @@ def eprint(*args, **kwargs):
         logger.error(*args)
     else:
         print(*args, file=sys.stderr, **kwargs)
+
+
+def leave(rc=0):
+    watchdog('stop')
+    logger.info(f"Exiting with result code: {rc}")
+    sys.exit(rc)
 
 
 def init_logging(log_name='yd'):
@@ -75,7 +82,7 @@ def connect_redis():
     except Exception as e:
         eprint(f"Failed connecting to KeyDB at {redis_host}:{redis_port}: {traceback.format_exc()}")
         #Активное подключение к Redis/KeyDB критично для дальнейшей работы, без него - выходим
-        sys.exit(-1)
+        leave(-1)
     return redis_connection
 
 
@@ -103,8 +110,69 @@ def calculate_md5(file_path, chunk_size=8192):
     return md5.hexdigest()
 
 
+def watchdog(status='keepalive'):
+    pid = os.getpid()
+    if status == 'start':
+        r.hset('start_ts', pid, time.time())
+        r.hset('keepalive_ts', pid, time.time())
+    elif status == 'keepalive':
+        r.hset('keepalive_ts', pid, time.time())
+    elif status == 'stop':
+        r.hdel('start_ts', pid)
+        r.hdel('keepalive_ts', pid)
+
+    logger.info(f"Watchdog PID: {pid} status: {status}")
+
+
+def check_process():
+    #Проверяем, есть ли другие активные процессы. Если есть - проверяем их состояние, при превышении порогов
+    #общей продолжительности либо периода с последнего keepalive - такие процессы останавливаем.
+    #Если после проверки других активных процессов не осталось - возвращаем True и разрешаем текущему экземпляру
+    #запуститься. Если други активные и условно здоровые процессы есть - текущий процесс должен быть завершен
+    cur_pid = os.getpid()
+    active_count = 0
+    for pid_str in r.hkeys('keepalive_ts'):
+        pid = int(pid_str)
+        if pid != cur_pid:
+            process_start_ts = r.hget('start_ts', pid_str)
+            process_running_time = None
+            if process_start_ts is not None:
+                try:
+                    process_running_time = time.time() - float(process_start_ts)
+                except ValueError:
+                    process_running_time = None
+
+            keepalive_ts = r.hget('keepalive_ts', pid_str)
+            process_inactive_time = None
+            if keepalive_ts is not None:
+                try:
+                    process_inactive_time = time.time() - float(keepalive_ts)
+                except ValueError:
+                    process_inactive_time = None
+
+            logger.error(f"Process {pid} started {process_running_time:.1f} sec. ago, sent keepalive {process_inactive_time:.1f} sec. ago")
+
+            if process_running_time is None or process_running_time > MAX_TIME_FROM_START or \
+                process_inactive_time is None or process_inactive_time > MAX_TIME_FROM_KEEPALIVE:
+                logger.error(f"Process {pid} apparently stuck. Make it exit")
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except Exception as e:
+                    logger.error(f"Failed to kill process {pid}: {str(e)}")
+
+                r.hdel('start_ts', pid_str)
+                r.hdel('keepalive_ts', pid_str)
+            else:
+                logger.error(f"Process {pid} is up and running. Leave it alone")
+                active_count += 1
+
+    return active_count == 0
+
+
 # Function to download a file with integrity checks and retries
 def download_file(download_url, local_file_path, remote_file_size, remote_md5):
+    watchdog('keepalive')
+
     temp_file_path = os.path.join(TEMP_DIR, remote_md5)
 
     local_dir = os.path.dirname(local_file_path)
@@ -113,7 +181,7 @@ def download_file(download_url, local_file_path, remote_file_size, remote_md5):
 
     if not os.path.isdir(local_dir):
         eprint(f"Can't create folder {local_dir}")
-        sys.exit(-1)
+        leave(-1)
 
     attempts = 0
     fatal = False
@@ -183,6 +251,8 @@ def get_idx_rec(f, index_name=LOCAL_INDEX_NAME):
 
 
 def index_local_file(f, force=False, remove=False, size=None, md5=None):
+    watchdog('keepalive')
+
     logger.debug(f"In index_local_file: {f=}, {force=}, {remove=}, {size=}, {md5=}")
 
     if remove:
@@ -241,6 +311,8 @@ def check_local_file(f, size, md5):
 
 
 def index_local_folder(p):
+    watchdog('keepalive')
+
     abs_path=os.path.abspath(p)
 
     if os.path.isfile(abs_path):
@@ -255,6 +327,7 @@ def index_local_folder(p):
 
 
 def purge_local_index(p):
+    watchdog('keepalive')
     abs_path=os.path.abspath(p)
     for f in r.hkeys(LOCAL_INDEX_NAME):
         logger.debug(f'{f}')
@@ -264,6 +337,8 @@ def purge_local_index(p):
 
 
 def index_remote_folder(public_url, path=None):
+    watchdog('keepalive')
+
     global logger
 
     api_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
@@ -296,6 +371,8 @@ def index_remote_folder(public_url, path=None):
 
 
 def purge_remote_index(ts):
+    watchdog('keepalive')
+
     if ts is not None and ts > MIN_TS:
         for f in r.hkeys(REMOTE_INDEX_NAME):
             idx_rec = get_idx_rec(f, REMOTE_INDEX_NAME)
@@ -309,9 +386,11 @@ def purge_remote_index(ts):
 
 
 def sync_remote_to_local_folder(target_folder, filter_mime=''):
+    watchdog('keepalive')
+
     if not os.path.isdir(target_folder):
         eprint(f"Local target folder {target_folder} doesn't exist, abort syncing")
-        sys.exit(-1)
+        leave(-1)
 
     download_list = list()
     delete_list = list()
@@ -351,10 +430,12 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
             logger.error(f"L_ != R_: {f}")
 
     for idx_rec in download_list:
+        watchdog('keepalive')
         logger.info(f"Download {idx_rec}")
         if download_file(idx_rec['download_url'], idx_rec['local_f'], idx_rec['size'], idx_rec['md5']):
             index_local_file(idx_rec['local_f'], size=idx_rec['size'], md5=idx_rec['md5'])
 
+    watchdog('keepalive')
     for idx_rec in delete_list:
         logger.info(f"Delete {idx_rec}")
         if os.unlink(idx_rec['local_f']):
@@ -362,6 +443,8 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
 
 
 def delete_empty_folders(root):
+    watchdog('keepalive')
+
     deleted = set()
 
     for current_dir, subdirs, files in os.walk(root, topdown=False):
@@ -386,18 +469,26 @@ start_ts = time.time()
 logger = init_logging()
 r = connect_redis()
 
+if check_process():
+    logger.info('There are no other active instances of the script, execution permitted')
+else:
+    logger.error('There are other active instances of the script, leaving')
+    leave(-1)
+
 #r.flushdb()
+
+watchdog('start')
 
 logger.debug(f"{len(sys.argv)} {sys.argv}")
 
 if len(sys.argv) < 3:
     eprint(f"Usage: {sys.argv[0]} path_to_frame.cfg path_to_images_folder")
-    sys.exit(-1)
+    leave(-1)
 
 config_file=os.path.expanduser(sys.argv[1])
 if not os.path.isfile(config_file):
     eprint(f"config file {config_file} doesn't exist")
-    sys.exit(-1)
+    leave(-1)
 
 LOCAL_SYNC_DIR=os.path.expanduser(sys.argv[2])
 if not os.path.isdir(LOCAL_SYNC_DIR):
@@ -405,20 +496,20 @@ if not os.path.isdir(LOCAL_SYNC_DIR):
 
 if not os.path.isdir(LOCAL_SYNC_DIR):
     eprint(f"sync dir {LOCAL_SYNC_DIR} doesn't exist and can't be created")
-    sys.exit(-1)
+    leave(-1)
 
 load_config(config_file)
 
 #Probe sync dir if it is open for writing
 if LOCAL_SYNC_DIR is None or not os.path.isdir(LOCAL_SYNC_DIR) or not os.access(LOCAL_SYNC_DIR, os.W_OK):
     eprint(f"Local sync dir {LOCAL_SYNC_DIR} doesn't exist or isn't writable")
-    sys.exit(-1)
+    leave(-1)
 
 TEMP_DIR = os.path.join(LOCAL_SYNC_DIR, TEMP_SUBDIR)
 os.makedirs(TEMP_DIR, exist_ok=True)
 if not os.path.isdir(TEMP_DIR) or not os.access(TEMP_DIR, os.W_OK):
     eprint(f"Temp dir {TEMP_DIR} doesn't exist or isn't writable")
-    sys.exit(-1)
+    leave(-1)
     #letters = string.ascii_lowercase
     #random_name = ''.join(random.choice(letters) for i in range(16))
 
@@ -437,10 +528,11 @@ sync_remote_to_local_folder(LOCAL_SYNC_DIR, filter_mime='image')
 
 delete_empty_folders(LOCAL_SYNC_DIR)
 
+watchdog('stop')
+
 #ToDo: Проверка на активность других процессов
 #ToDo: Ограничение на общее количество попыток обращений к Я.Д
 #ToDo: Добавить параметр, разрешающий приоритет демонстрации свежезагруженных фоток
-#ToDo: Перенести загрузку логотипа и демо-подборки на Я.Д
 #ToDo: Уведомление через телеграм об ошибках
 
 
