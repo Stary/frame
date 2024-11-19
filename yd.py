@@ -13,10 +13,6 @@ import re
 import random
 import string
 
-from tenacity import sleep
-
-#from pyasn1_modules.rfc2985 import pkcs_9_at_challengePassword
-
 # Define variables
 YANDEX_DISK_PUBLIC_URL = None
 LOCAL_SYNC_DIR = None
@@ -39,7 +35,11 @@ LOG_DIR = '/var/log/frame'
 #os.makedirs(TEMP_DIR, exist_ok=True)
 
 def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
+    global logger
+    if logger is not None:
+        logger.error(*args)
+    else:
+        print(*args, file=sys.stderr, **kwargs)
 
 
 def init_logging(log_name='yd'):
@@ -48,18 +48,17 @@ def init_logging(log_name='yd'):
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    log_file = os.path.join(LOG_DIR if os.path.isdir(LOG_DIR) else '.', f'{log_name}.log')
     try:
-        if __name__ == '__main__':
-            pass
-            fh = logging.StreamHandler(sys.stdout)
-        else:
+        if os.path.isdir(LOG_DIR):
+            log_file = os.path.join(LOG_DIR, f'{log_name}.log')
             fh = logging.handlers.RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=10)
+        else:
+            fh = logging.StreamHandler(sys.stdout)
         fh.setLevel(LOG_LEVEL)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
     except Exception as ex:
-        eprint(f"Exception occured while opening log file {log_file}: {str(ex)}")
+        eprint(f"Exception occurred while opening log file {log_file}: {str(ex)}")
         #Без логов запускаться не будем
         sys.exit(-1)
 
@@ -153,7 +152,7 @@ def download_file(download_url, local_file_path, remote_file_size, remote_md5):
             else:
                 sleep_for = 10 * 2 ** attempts
                 logger.debug(f"Sleeping for {sleep_for:.1f} sec. before attempt N{attempts+2}")
-                sleep(10 * 2 ** attempts)
+                time.sleep(10 * 2 ** attempts)
 
         attempts += 1
 
@@ -428,4 +427,14 @@ purge_remote_index(start_ts)
 sync_remote_to_local_folder(LOCAL_SYNC_DIR, filter_mime='image')
 
 delete_empty_folders(LOCAL_SYNC_DIR)
+
+#ToDo: Проверка на активность других процессов
+#ToDo: Ограничение на общее количество попыток обращений к Я.Д
+#ToDo: Добавить параметр, разрешающий приоритет демонстрации свежезагруженных фоток
+#ToDo: Перенести загрузку логотипа и демо-подборки на Я.Д
+#ToDo: Уведомление через телеграм об ошибках
+#ToDo: Оптимизация переноса - при появлении нового файла проверять, нет ли локального с таким же md5
+
+
+
 
