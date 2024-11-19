@@ -38,10 +38,9 @@ LOG_DIR = '/var/log/frame'
 
 def eprint(*args, **kwargs):
     global logger
+    print(*args, file=sys.stderr, **kwargs)
     if logger is not None:
         logger.error(*args)
-    else:
-        print(*args, file=sys.stderr, **kwargs)
 
 
 def leave(rc=0):
@@ -479,8 +478,6 @@ else:
 
 watchdog('start')
 
-logger.debug(f"{len(sys.argv)} {sys.argv}")
-
 if len(sys.argv) < 3:
     eprint(f"Usage: {sys.argv[0]} path_to_frame.cfg path_to_images_folder")
     leave(-1)
@@ -530,7 +527,6 @@ delete_empty_folders(LOCAL_SYNC_DIR)
 
 watchdog('stop')
 
-#ToDo: Проверка на активность других процессов
 #ToDo: Ограничение на общее количество попыток обращений к Я.Д
 #ToDo: Добавить параметр, разрешающий приоритет демонстрации свежезагруженных фоток
 #ToDo: Уведомление через телеграм об ошибках
