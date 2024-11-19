@@ -68,8 +68,8 @@ def init_logging(log_name='yd'):
 
 def connect_redis():
     redis_connection = None
-    redis_host = os.environ.get('REDIS_HOST', '127.0.0.1')
-    redis_port = int(os.environ.get('REDIS_PORT', 6379))
+    redis_host = os.environ.get('KEYDB_HOST', KEYDB_HOST)
+    redis_port = int(os.environ.get('KEYDB_PORT', KEYDB_PORT))
     try:
        redis_connection = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
     except Exception as e:
