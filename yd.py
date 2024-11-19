@@ -31,6 +31,7 @@ MD5_INDEX_NAME='md5_index'
 
 MAX_TIME_FROM_KEEPALIVE=600
 MAX_TIME_FROM_START=7200
+MIN_TIME_FROM_SYNC=600
 
 LOG_LEVEL = logging.DEBUG
 LOG_DIR = '/var/log/frame'
@@ -65,7 +66,7 @@ def init_logging(log_name='yd'):
         fh.setFormatter(formatter)
         logger.addHandler(fh)
     except Exception as ex:
-        eprint(f"Exception occurred while opening log file {log_file}: {str(ex)}")
+        eprint(f"Exception occurred while setting up logger: {str(ex)}")
         #Без логов запускаться не будем
         sys.exit(-1)
 
@@ -116,6 +117,8 @@ def watchdog(status='keepalive'):
         r.hset('keepalive_ts', pid, time.time())
     elif status == 'keepalive':
         r.hset('keepalive_ts', pid, time.time())
+    elif status == 'sync':
+        r.set('sync_ts', time.time())
     elif status == 'stop':
         r.hdel('start_ts', pid)
         r.hdel('keepalive_ts', pid)
@@ -124,6 +127,19 @@ def watchdog(status='keepalive'):
 
 
 def check_process():
+    #Проверяем, сколько прошло с последней синхронизации, чтобы избежать слишком частого обращения к API Яндекса
+
+    last_sync_ts_str = r.get('sync_ts')
+    if last_sync_ts_str is not None:
+        try:
+            last_sync_delta = time.time() - float(last_sync_ts_str)
+            if last_sync_delta < MIN_TIME_FROM_SYNC:
+                eprint(f"{last_sync_delta:.0f} sec. passed since last sync, min is {MIN_TIME_FROM_SYNC} sec")
+                return False
+        except ValueError:
+            pass
+
+
     #Проверяем, есть ли другие активные процессы. Если есть - проверяем их состояние, при превышении порогов
     #общей продолжительности либо периода с последнего keepalive - такие процессы останавливаем.
     #Если после проверки других активных процессов не осталось - возвращаем True и разрешаем текущему экземпляру
@@ -153,16 +169,16 @@ def check_process():
 
             if process_running_time is None or process_running_time > MAX_TIME_FROM_START or \
                 process_inactive_time is None or process_inactive_time > MAX_TIME_FROM_KEEPALIVE:
-                logger.error(f"Process {pid} apparently stuck. Make it exit")
+                eprint(f"Process {pid} apparently stuck. Make it exit")
                 try:
                     os.kill(pid, signal.SIGTERM)
                 except Exception as e:
-                    logger.error(f"Failed to kill process {pid}: {str(e)}")
+                    eprint(f"Failed to kill process {pid}: {str(e)}")
 
                 r.hdel('start_ts', pid_str)
                 r.hdel('keepalive_ts', pid_str)
             else:
-                logger.error(f"Process {pid} is up and running. Leave it alone")
+                eprint(f"Another process {pid} is up and running. Leave it alone")
                 active_count += 1
 
     return active_count == 0
@@ -468,15 +484,9 @@ start_ts = time.time()
 logger = init_logging()
 r = connect_redis()
 
-if check_process():
-    logger.info('There are no other active instances of the script, execution permitted')
-else:
-    eprint('There are other active instances of the script, leaving')
-    leave(-1)
 
 #r.flushdb()
 
-watchdog('start')
 
 if len(sys.argv) < 3:
     eprint(f"Usage: {sys.argv[0]} path_to_frame.cfg path_to_images_folder")
@@ -510,6 +520,13 @@ if not os.path.isdir(TEMP_DIR) or not os.access(TEMP_DIR, os.W_OK):
     #letters = string.ascii_lowercase
     #random_name = ''.join(random.choice(letters) for i in range(16))
 
+if check_process():
+    logger.info('Checks completed, execution permitted')
+else:
+    eprint('Not all conditions met to run the sync, leaving')
+    leave(-1)
+
+watchdog('start')
 
 logger.info(f"Starting sync to folder {LOCAL_SYNC_DIR} with temp dir {TEMP_DIR}")
 
@@ -520,6 +537,9 @@ purge_local_index(LOCAL_SYNC_DIR)
 index_remote_folder(YANDEX_DISK_PUBLIC_URL)
 
 purge_remote_index(start_ts)
+
+#Фиксируем, на какой момент синхронизированы данные
+watchdog('sync')
 
 sync_remote_to_local_folder(LOCAL_SYNC_DIR, filter_mime='image')
 
