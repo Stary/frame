@@ -222,7 +222,7 @@ if [ "X$source_md5" != "X$target_md5" ]
 then
   echo "Source MD5: $source_md5 != Target MD5: $target_md5"
   #wget -O "$tmp_file" "$source_url"
-  $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$source_file" "$TMP_FILE"
+  $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$source_file" "$tmp_file"
   tmp_md5=$(md5sum "$tmp_file" | cut -d ' ' -f 1)
   if [ "X$tmp_md5" == "X$source_md5" ]
   then
