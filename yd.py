@@ -101,6 +101,13 @@ def load_config(config_path):
                         logger.info(f"Yandex disk public url found in config")
 
 
+def notify_on_change(config_path):
+    config_hash_path = str(config_path) + '.md5'
+    if os.path.isfile(config_hash_path):
+        logger.info(f'Removing config hash {config_hash_path} to notify on changes')
+        os.unlink(config_hash_path)
+
+
 # Calculate MD5 hash of a file
 def calculate_md5(file_path, chunk_size=8192):
     md5 = hashlib.md5()
@@ -411,6 +418,7 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
     delete_list = list()
 
     total_download_size = 0
+    changed_files = 0
 
     for f in sorted(set(r.hkeys(REMOTE_INDEX_NAME)).union(
                    [re.sub(r'^/', '', local_f[len(target_folder):]) for local_f in r.hkeys(LOCAL_INDEX_NAME) if local_f.startswith(target_folder)])):
@@ -447,25 +455,30 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
         else:
             logger.error(f"L_ != R_: {f}")
 
-
     if len(download_list) > 0:
         du = shutil.disk_usage(target_folder)
 
+        logger.info(f"There are {len(download_list)} files of total size {total_download_size / (1024 * 1024 * 1024):.3f}G on the Yandex Disk")
+        logger.info(f"{target_folder} has {du.free / (1024 * 1024 * 1024):.3f}G available")
+
         if du.free > total_download_size:
-            logger.error(f"Downloading of {len(download_list)} files total size {total_download_size/(1024*1024*1024):.3f}G, {du.free/(1024*1024*1024):.3f}G available")
             for idx_rec in download_list:
                 watchdog('keepalive')
-                logger.info(f"Download {idx_rec}")
+                logger.info(f"Download {idx_rec['local_f']}")
                 if download_file(idx_rec['download_url'], idx_rec['local_f'], idx_rec['size'], idx_rec['md5']):
                     index_local_file(idx_rec['local_f'], size=idx_rec['size'], md5=idx_rec['md5'])
+                    changed_files += 1
         else:
-            logger.error(f"Downloading of {len(download_list)} files total size {total_download_size/(1024*1024*1024):.3f}G aborted due to lack of free space - only {du.free/(1024*1024*1024):.3f}G available")
+            logger.error(f"Downloading aborted due to lack of free space at {target_folder}")
 
     watchdog('keepalive')
     for idx_rec in delete_list:
         logger.info(f"Delete {idx_rec}")
         if os.unlink(idx_rec['local_f']):
             index_local_file(idx_rec['local_f'], remove=True)
+            changed_files += 1
+
+    return changed_files
 
 
 def delete_empty_folders(root):
@@ -552,7 +565,9 @@ purge_remote_index(start_ts)
 #Фиксируем, на какой момент синхронизированы данные
 watchdog('sync')
 
-sync_remote_to_local_folder(LOCAL_SYNC_DIR, filter_mime='image')
+changes = sync_remote_to_local_folder(LOCAL_SYNC_DIR, filter_mime='image')
+if changes > 0:
+    notify_on_change(config_file)
 
 delete_empty_folders(LOCAL_SYNC_DIR)
 
