@@ -498,13 +498,14 @@ FRAME)
           RECENT_LIST="$TMP_IMAGES_DIR/recent.lst"
           OLDER_LIST="$TMP_IMAGES_DIR/older.lst"
 
-          unlink "$RECENT_LIST"
-          unlink "$OLDER_LIST"
+          unlink "$RECENT_LIST" 2>/dev/null
+          unlink "$OLDER_LIST" 2>/dev/null
 
           find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin -$RECENT_MINUTES_FIRST | sort > "$RECENT_LIST"
           find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin +$RECENT_MINUTES_FIRST | sort > "$OLDER_LIST"
 
-          unlink "$PLAY_LIST"
+          unlink "$PLAY_LIST" 2>/dev/null
+
           if [ -s "$RECENT_LIST" ]
           then
             if [ "X$RANDOM_ORDER" == "Xyes" ]
@@ -515,7 +516,7 @@ FRAME)
               lines=$(wc -l "$RECENT_LIST" | cut -d ' ' -f 1)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
               tail=$(echo "$lines + $offset" | bc)
-              echo "Добавляем в плейлист $lines новых фотографий, начиная c $offset)"
+              echo "Добавляем в плейлист $lines новых фотографий, начиная c $offset"
               cat "$RECENT_LIST" "$RECENT_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
           else
@@ -531,7 +532,7 @@ FRAME)
               lines=$(wc -l "$OLDER_LIST" | cut -d ' ' -f 1)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
               tail=$(echo "$lines + $offset" | bc)
-              echo "Добавляем в плейлист $lines старых фотографий, начиная c $offset)"
+              echo "Добавляем в плейлист $lines старых фотографий, начиная c $offset"
               cat "$OLDER_LIST" "$OLDER_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
           else
@@ -539,7 +540,8 @@ FRAME)
           fi
 
           #Удалим старую версию списка
-          unlink "$IMAGES_DIR/play.lst"
+          unlink "$IMAGES_DIR/play.lst" 2>/dev/null
+
           break
         fi
       fi
@@ -570,7 +572,8 @@ FRAME)
 
 
     #Удалим старую версию списка
-    unlink "$IMAGES_DIR/processed.lst"
+    unlink "$IMAGES_DIR/processed.lst" 2>/dev/null
+
     PROCESSED_LIST="$TMP_IMAGES_DIR/processed.lst"
     touch "$PROCESSED_LIST"
     diff=$(diff "$ALL_LIST" "$PROCESSED_LIST")
