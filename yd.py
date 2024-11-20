@@ -474,9 +474,9 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
     watchdog('keepalive')
     for idx_rec in delete_list:
         logger.info(f"Delete {idx_rec}")
-        if os.unlink(idx_rec['local_f']):
-            index_local_file(idx_rec['local_f'], remove=True)
-            changed_files += 1
+        os.unlink(idx_rec['local_f'])
+        index_local_file(idx_rec['local_f'], remove=True)
+        changed_files += 1
 
     return changed_files
 
