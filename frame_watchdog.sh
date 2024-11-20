@@ -32,6 +32,9 @@ CLOCK_OFFSET=40
 CLOCK_VOFFSET=320
 
 USB_DIR=/media/usb
+LOCAL_DIR=/media/photo
+DEMO_DIR=/media/demo
+
 BIN_DIR=$HOME/bin
 LOG_DIR=/var/log/frame
 YANDEX_DISK_SYNC_SCRIPT='yd.py'
@@ -40,7 +43,7 @@ CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
 
 YANDEX_DISK_PUBLIC_URL=''
 
-DIRS="$USB_DIR /media/photo $HOME/photo /media/demo $HOME/demo"
+DIRS="$USB_DIR $LOCAL_DIR $HOME/photo $DEMO_DIR $HOME/demo"
 IMAGES_DIR=''
 USER=$(whoami)
 IMAGE_EXT_RE='(img|png|jpg|jpeg|heic)'
@@ -48,8 +51,8 @@ IMAGE_EXT_RE='(img|png|jpg|jpeg|heic)'
 RESTART_SLIDESHOW_AFTER=120
 
 WIFI_DEV='wlan0'
-WIFI_MAC=$((16#$(ifconfig $WIFI_DEV 2>/dev/null | awk '/ether/ {print $2}' | cut -d ':' -f 5-6 | sed 's/://g' | tr a-z A-Z)))
-WIFI_AP_PASSWORD_FILE="$HOME/user.dat"
+#WIFI_MAC=$((16#$(ifconfig $WIFI_DEV 2>/dev/null | awk '/ether/ {print $2}' | cut -d ':' -f 5-6 | sed 's/://g' | tr a-z A-Z)))
+#WIFI_AP_PASSWORD_FILE="$HOME/user.dat"
 
 WIFI_SSID=''
 WIFI_PASSWORD=''
@@ -136,6 +139,11 @@ do
 done
 
 USB_READY=$(mount | grep -c $USB_DIR)
+if [ "$USB_READY" -gt "0" ] && [ ! -w "$USB_DIR" ]
+then
+  echo "Флэшка видна среди смонтированных, но записать не удается. Считаем, что флэшки нет"
+  USB_READY=0
+fi
 
 ########### Loading external config ##################
 TMP_CONFIG="/tmp/frame.cfg"
@@ -550,26 +558,29 @@ FRAME)
     sudo chown -R $USER:$USER "$IMAGES_DIR" 2>/dev/null
 
     ############ Настройка периодического задания для запуска синхронизации с Яндекс-Диском ##################
+    cur_crontab_line=$(crontab -l 2>/dev/null | grep $YANDEX_DISK_SYNC_SCRIPT)
     if [ -n "$YANDEX_DISK_PUBLIC_URL" ] && [ -n "$WIFI_SSID" ]
     then
-      target_crontab_line="*/15 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $IMAGES_DIR/yandex.disk >> $LOG_DIR/cron.log 2>&1"
-    else
-      target_crontab_line=""
-    fi
-    cur_crontab_line=$(crontab -l 2>/dev/null | grep $YANDEX_DISK_SYNC_SCRIPT)
-
-    if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
-    then
-      if [ -n "$target_crontab_line" ]
+      if [ "$USB_READY" -gt "0" ]
       then
-        echo "Включаем синхронизацию с Яндекс Диском в папку $IMAGES_DIR/yandex.disk"
-        (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
+        YANDEX_DISK_DIR=$USB_DIR/yandex.disk
       else
+        YANDEX_DISK_DIR=$LOCAL_DIR/yandex.disk
+      fi
+      target_crontab_line="*/15 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $YANDEX_DISK_DIR >> $LOG_DIR/cron.log 2>&1"
+      if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
+      then
+        echo "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK_DIR"
+        (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
+      fi
+    else
+      if [ -n "$cur_crontab_line" ]
+      then
+        target_crontab_line=""
         echo "Выключаем синхронизацию с Яндекс Диском"
         crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT | crontab -l
       fi
     fi
-
 
     #Удалим старую версию списка
     unlink "$IMAGES_DIR/processed.lst" 2>/dev/null
@@ -660,5 +671,4 @@ OFF)
   echo "Неизвестный режим '$target_mode'"
 esac
 
-#ToDo: Определять целевую папку для синхронизации с Яндекс Диском не по наличию фоток, а по факту успешного подключения флэшки
 
