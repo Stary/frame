@@ -13,7 +13,8 @@ WIFI_SSID=''
 WIFI_PASSWORD=''
 DELAY=55.0
 RANDOM_ORDER=no
-RECENT_MINUTES_FIRST=''
+DEFAULT_RECENT_MINUTES_FIRST=3000
+RECENT_MINUTES_FIRST=$DEFAULT_RECENT_MINUTES_FIRST
 CONFIG=frame.cfg
 SLIDESHOW_DISPLAY=:0
 FONT_DIR=/usr/share/fonts/truetype/freefont/
@@ -260,6 +261,12 @@ then
   esac
 fi
 
+if ! [[ $RECENT_MINUTES_FIRST =~ ^[0-9]+$ ]] ; then
+  echo "Нечисловое значение в параметре RECENT_MINUTES_FIRST: $RECENT_MINUTES_FIRST, меняем на $DEFAULT_RECENT_MINUTES_FIRST"
+  RECENT_MINUTES_FIRST=DEFAULT_RECENT_MINUTES_FIRST
+fi
+
+
 read -r -d '' config << EOM
 ################################
 #Frame configuration
@@ -476,16 +483,61 @@ FRAME)
     do
       if [ -d "$d" ]
       then
-        TMP_PLAYLIST="/tmp/play.lst"
-        find $d -size +100k | grep -i -E -e "$IMAGE_EXT_RE" | sort  > $TMP_PLAYLIST
-        if [ -s "$TMP_PLAYLIST" ]
+        TMP_ALL_LIST="/tmp/all.lst"
+        find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" | sort  > $TMP_ALL_LIST
+        if [ -s "$TMP_ALL_LIST" ]
         then
           IMAGES_DIR=$d
           echo "Каталог с фото: $IMAGES_DIR"
           TMP_IMAGES_DIR="/tmp/frame/$IMAGES_DIR"
           mkdir -p "$TMP_IMAGES_DIR"
-          PLAYLIST="$TMP_IMAGES_DIR/play.lst"
-          cat "$TMP_PLAYLIST" > "$PLAYLIST"
+          ALL_LIST="$TMP_IMAGES_DIR/all.lst"
+          cat "$TMP_ALL_LIST" > "$ALL_LIST"
+          PLAY_LIST="$TMP_IMAGES_DIR/play.lst"
+
+          RECENT_LIST="$TMP_IMAGES_DIR/recent.lst"
+          OLDER_LIST="$TMP_IMAGES_DIR/older.lst"
+
+          unlink "$RECENT_LIST"
+          unlink "$OLDER_LIST"
+
+          find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin -$RECENT_MINUTES_FIRST | sort > "$RECENT_LIST"
+          find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin +$RECENT_MINUTES_FIRST | sort > "$OLDER_LIST"
+
+          unlink "$PLAY_LIST"
+          if [ -s "$RECENT_LIST" ]
+          then
+            if [ "X$RANDOM_ORDER" == "Xyes" ]
+            then
+              echo "Добавляем в плейлист новые фотографии в случайном порядке"
+              cat "$RECENT_LIST" | shuf >> "$PLAY_LIST"
+            else
+              lines=$(wc -l "$RECENT_LIST" | cut -d ' ' -f 1)
+              offset=$(echo "1 + $RANDOM % $lines" | bc)
+              tail=$(echo "$lines + $offset" | bc)
+              echo "Добавляем в плейлист $lines новых фотографий, начиная c $offset)"
+              cat "$RECENT_LIST" "$RECENT_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
+            fi
+          else
+            echo "Новых фотографий в $IMAGES_DIR не найдено"
+          fi
+          if [ -s "$OLDER_LIST" ]
+          then
+            if [ "X$RANDOM_ORDER" == "Xyes" ]
+            then
+              echo "Добавляем в плейлист старые фотографии в случайном порядке"
+              cat "$OLDER_LIST" | shuf >> "$PLAY_LIST"
+            else
+              lines=$(wc -l "$OLDER_LIST" | cut -d ' ' -f 1)
+              offset=$(echo "1 + $RANDOM % $lines" | bc)
+              tail=$(echo "$lines + $offset" | bc)
+              echo "Добавляем в плейлист $lines старых фотографий, начиная c $offset)"
+              cat "$OLDER_LIST" "$OLDER_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
+            fi
+          else
+            echo "Старых фотографий в $IMAGES_DIR не найдено"
+          fi
+
           #Удалим старую версию списка
           unlink "$IMAGES_DIR/play.lst"
           break
@@ -519,19 +571,19 @@ FRAME)
 
     #Удалим старую версию списка
     unlink "$IMAGES_DIR/processed.lst"
-    ROTATELIST="$TMP_IMAGES_DIR/processed.lst"
-    touch "$ROTATELIST"
-    diff=$(diff "$PLAYLIST" "$ROTATELIST")
+    PROCESSED_LIST="$TMP_IMAGES_DIR/processed.lst"
+    touch "$PROCESSED_LIST"
+    diff=$(diff "$ALL_LIST" "$PROCESSED_LIST")
     if [ -n "$diff" ]
     then
       PID=$(pgrep find)
       if [ -z "$PID" ]
       then
-        cat "$PLAYLIST" > "$ROTATELIST"
+        cat "$ALL_LIST" > "$PROCESSED_LIST"
         echo "Обработка в фоне пользовательских POI"
-        find "$IMAGES_DIR" -regextype egrep -iregex ".*[0-9]+\s*(km|m)\.$IMAGE_EXT_RE" -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
+        find "$IMAGES_DIR" -type f -size +100k -regextype egrep -iregex ".*[0-9]+\s*(km|m)\.$IMAGE_EXT_RE" -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
         echo "Запуск в фоне автоповорота фотографий"
-        find "$IMAGES_DIR" -type f -not -empty -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
+        find "$IMAGES_DIR" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
       else
         echo "Автоповорот уже запущен, пропускаю"
       fi
@@ -544,15 +596,15 @@ FRAME)
 #      #Если пользователь отключил случайный порядок, отсортируем файлы по имени
 #      echo "Задан последовательный порядок воспроизведения, отсортируем файлы по имени"
 #      ORDER_OPTIONS=('-S')
-#      d=$(cat $PLAYLIST | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf -n 1)
+#      d=$(cat $PLAY_LIST | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf -n 1)
 #      if [ -n "$d" ]
 #      then
 #        #Если файлы имеют в имени дату - найдем случайный день и сдвинем начало презентации на первый файл от этого дня
 #        echo "Найдем самую раннюю фотографию за дату $d:"
-#        f=$(cat $PLAYLIST | grep "$d" | sort | head -1)
+#        f=$(cat $PLAY_LIST | grep "$d" | sort | head -1)
 #      else
 #        echo "Возьмем в качестве начального случайный файл из плейлиста"
-#        f=$(cat $PLAYLIST | shuf -n 1)
+#        f=$(cat $PLAY_LIST | shuf -n 1)
 #      fi
 #      if [ -n "$f" ]
 #      then
@@ -574,8 +626,8 @@ FRAME)
         echo "Запускаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
         nohup sh -c "sleep $sleep_to_restart; pkill -f feh" >/dev/null 2>&1 &
       fi
-      feh -V -r -Z -F -Y -D $DELAY -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
-#      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
+      feh -V -r -Z -F -Y -D $DELAY -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAY_LIST >> /var/log/frame/feh.log 2>&1 &
+#      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAY_LIST >> /var/log/frame/feh.log 2>&1 &
     else
       echo "Feh уже успел запуститься"
     fi
@@ -606,4 +658,3 @@ OFF)
 esac
 
 
-#ToDo: Добавить вариант демонстрации свежезагруженных фоток
