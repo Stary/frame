@@ -42,6 +42,7 @@ YANDEX_DISK_PUBLIC_URL=''
 DIRS="$USB_DIR /media/photo $HOME/photo /media/demo $HOME/demo"
 IMAGES_DIR=''
 USER=$(whoami)
+IMAGE_EXT_RE='(img|png|jpg|jpeg|heic)'
 
 RESTART_SLIDESHOW_AFTER=120
 
@@ -476,7 +477,7 @@ FRAME)
       if [ -d "$d" ]
       then
         TMP_PLAYLIST="/tmp/play.lst"
-        find $d -size +100k | grep -i -E -e '(img|png|jpg|jpeg|heic)' > $TMP_PLAYLIST
+        find $d -size +100k | grep -i -E -e "$IMAGE_EXT_RE" | sort  > $TMP_PLAYLIST
         if [ -s "$TMP_PLAYLIST" ]
         then
           IMAGES_DIR=$d
@@ -492,7 +493,7 @@ FRAME)
       fi
     done
 
-    sudo chown -R $USER:$USER $IMAGES_DIR 2>/dev/null
+    sudo chown -R $USER:$USER "$IMAGES_DIR" 2>/dev/null
 
     ############ Настройка периодического задания для запуска синхронизации с Яндекс-Диском ##################
     if [ -n "$YANDEX_DISK_PUBLIC_URL" ] && [ -n "$WIFI_SSID" ]
@@ -507,7 +508,7 @@ FRAME)
     then
       if [ -n "$target_crontab_line" ]
       then
-        echo "Включаем синхронизацию с Яндекс Диском в папку $IMAGES_DIR/yandex"
+        echo "Включаем синхронизацию с Яндекс Диском в папку $IMAGES_DIR/yandex.disk"
         (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
       else
         echo "Выключаем синхронизацию с Яндекс Диском"
@@ -519,48 +520,50 @@ FRAME)
     #Удалим старую версию списка
     unlink "$IMAGES_DIR/processed.lst"
     ROTATELIST="$TMP_IMAGES_DIR/processed.lst"
-    touch $ROTATELIST
-    diff=$(diff $PLAYLIST $ROTATELIST)
+    touch "$ROTATELIST"
+    diff=$(diff "$PLAYLIST" "$ROTATELIST")
     if [ -n "$diff" ]
     then
       PID=$(pgrep find)
       if [ -z "$PID" ]
       then
-        cat $PLAYLIST > $ROTATELIST
+        cat "$PLAYLIST" > "$ROTATELIST"
         echo "Обработка в фоне пользовательских POI"
-        find $IMAGES_DIR -regextype egrep -iregex '.*[0-9]+\s*(km|m)\.(img|png|jpg|jpeg|heic)' -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
+        find "$IMAGES_DIR" -regextype egrep -iregex ".*[0-9]+\s*(km|m)\.$IMAGE_EXT_RE" -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
         echo "Запуск в фоне автоповорота фотографий"
-        find $IMAGES_DIR -type f -not -empty -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
+        find "$IMAGES_DIR" -type f -not -empty -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
       else
         echo "Автоповорот уже запущен, пропускаю"
       fi
     fi
 
-    #По-умолчанию порядок случайный
-    ORDER_OPTIONS=('-z')
-    if [ "X$RANDOM_ORDER" == "Xno" ]
-    then
-      #Если пользователь отключил случайный порядок, отсортируем файлы по имени
-      echo "Задан последовательный порядок воспроизведения, отсортируем файлы по имени"
-      ORDER_OPTIONS=('-S')
-      d=$(cat $PLAYLIST | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf -n 1)
-      if [ -n "$d" ]
-      then
-        #Если файлы имеют в имени дату - найдем случайный день и сдвинем начало презентации на первый файл от этого дня
-        echo "Найдем самую раннюю фотографию за дату $d:"
-        f=$(cat $PLAYLIST | grep "$d" | sort | head -1)
-      else
-        echo "Возьмем в качестве начального случайный файл из плейлиста"
-        f=$(cat $PLAYLIST | shuf -n 1)
-      fi
-      if [ -n "$f" ]
-      then
-        echo "Начнем слайдшоу с файла $f"
-        ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
-      fi
-  else
-      echo "Пользователь задал случайный порядок отображения: $RANDOM_ORDER"
-    fi
+#    #По-умолчанию порядок случайный
+#    ORDER_OPTIONS=('-z')
+#    if [ "X$RANDOM_ORDER" == "Xno" ]
+#    then
+#      #Если пользователь отключил случайный порядок, отсортируем файлы по имени
+#      echo "Задан последовательный порядок воспроизведения, отсортируем файлы по имени"
+#      ORDER_OPTIONS=('-S')
+#      d=$(cat $PLAYLIST | sed -E -e "s/^.*\///g" | grep -E -e "^[0-9]{8}\_[0-9]{6}" | cut -c 1-8 | sort -u | shuf -n 1)
+#      if [ -n "$d" ]
+#      then
+#        #Если файлы имеют в имени дату - найдем случайный день и сдвинем начало презентации на первый файл от этого дня
+#        echo "Найдем самую раннюю фотографию за дату $d:"
+#        f=$(cat $PLAYLIST | grep "$d" | sort | head -1)
+#      else
+#        echo "Возьмем в качестве начального случайный файл из плейлиста"
+#        f=$(cat $PLAYLIST | shuf -n 1)
+#      fi
+#      if [ -n "$f" ]
+#      then
+#        echo "Начнем слайдшоу с файла $f"
+#        ORDER_OPTIONS=('-S' 'name' '--start-at' "$f")
+#      fi
+#    else
+#      echo "Пользователь задал случайный порядок отображения: $RANDOM_ORDER"
+#    fi
+
+
     set -x
     PID=$(pgrep feh)
     if [ -z "$PID" ]
@@ -571,7 +574,8 @@ FRAME)
         echo "Запускаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
         nohup sh -c "sleep $sleep_to_restart; pkill -f feh" >/dev/null 2>&1 &
       fi
-      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
+      feh -V -r -Z -F -Y -D $DELAY -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
+#      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAYLIST >> /var/log/frame/feh.log 2>&1 &
     else
       echo "Feh уже успел запуститься"
     fi
