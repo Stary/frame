@@ -410,6 +410,8 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
     download_list = list()
     delete_list = list()
 
+    total_download_size = 0
+
     for f in sorted(set(r.hkeys(REMOTE_INDEX_NAME)).union(
                    [re.sub(r'^/', '', local_f[len(target_folder):]) for local_f in r.hkeys(LOCAL_INDEX_NAME) if local_f.startswith(target_folder)])):
         local_f = os.path.join(target_folder, f)
@@ -437,6 +439,7 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
                 download_list.append(remote_idx_rec)
         elif remote_idx_rec is not None and local_idx_rec is None:
             logger.info(f"L_ != RD: {f}")
+            total_download_size += remote_idx_rec.get('size', 0)
             download_list.append(remote_idx_rec)
         elif remote_idx_rec is None and local_idx_rec is not None:
             logger.info(f"LD != R_: {f}")
@@ -444,11 +447,19 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
         else:
             logger.error(f"L_ != R_: {f}")
 
-    for idx_rec in download_list:
-        watchdog('keepalive')
-        logger.info(f"Download {idx_rec}")
-        if download_file(idx_rec['download_url'], idx_rec['local_f'], idx_rec['size'], idx_rec['md5']):
-            index_local_file(idx_rec['local_f'], size=idx_rec['size'], md5=idx_rec['md5'])
+
+    if len(download_list) > 0:
+        du = shutil.disk_usage(target_folder)
+
+        if du.free > total_download_size:
+            logger.error(f"Downloading of {len(download_list)} files total size {total_download_size/(1024*1024*1024):.3f}G, {du.free/(1024*1024*1024):.3f}G available")
+            for idx_rec in download_list:
+                watchdog('keepalive')
+                logger.info(f"Download {idx_rec}")
+                if download_file(idx_rec['download_url'], idx_rec['local_f'], idx_rec['size'], idx_rec['md5']):
+                    index_local_file(idx_rec['local_f'], size=idx_rec['size'], md5=idx_rec['md5'])
+        else:
+            logger.error(f"Downloading of {len(download_list)} files total size {total_download_size/(1024*1024*1024):.3f}G aborted due to lack of free space - only {du.free/(1024*1024*1024):.3f}G available")
 
     watchdog('keepalive')
     for idx_rec in delete_list:
@@ -549,7 +560,6 @@ watchdog('stop')
 
 #ToDo: По окончании результативной синхронизации (когда были скачаны или удалены файлы) перезапускать слайдшоу
 #ToDo: Ограничение на общее количество попыток обращений к Я.Д
-#ToDo: Добавить параметр, разрешающий приоритет демонстрации свежезагруженных фоток
 #ToDo: Уведомление через телеграм об ошибках
 
 
