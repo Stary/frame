@@ -567,7 +567,7 @@ FRAME)
       else
         YANDEX_DISK_DIR=$LOCAL_DIR/yandex.disk
       fi
-      target_crontab_line="*/15 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $YANDEX_DISK_DIR >> $LOG_DIR/cron.log 2>&1"
+      target_crontab_line="3,13,23,33,43,53 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $YANDEX_DISK_DIR >> $LOG_DIR/cron.log 2>&1"
       if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
       then
         echo "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK_DIR"

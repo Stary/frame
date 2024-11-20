@@ -19,7 +19,6 @@ YANDEX_DISK_PUBLIC_URL = None
 LOCAL_SYNC_DIR = None
 TEMP_DIR = None
 TEMP_SUBDIR = '_temp'
-SYNC_INTERVAL = 300  # Sync every 5 minutes (in seconds)
 MAX_RETRIES = 3  # Maximum attempts for downloading a file
 KEYDB_HOST = '127.0.0.1'
 KEYDB_PORT = 6379
@@ -31,7 +30,7 @@ MD5_INDEX_NAME='md5_index'
 
 MAX_TIME_FROM_KEEPALIVE=600
 MAX_TIME_FROM_START=7200
-MIN_TIME_FROM_SYNC=600
+MIN_TIME_FROM_SYNC=500
 
 LOG_LEVEL = logging.DEBUG
 LOG_DIR = '/var/log/frame'
