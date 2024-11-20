@@ -515,7 +515,7 @@ FRAME)
             else
               lines=$(wc -l "$RECENT_LIST" | cut -d ' ' -f 1)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
-              tail=$(echo "$lines + $offset" | bc)
+              tail=$(echo "$lines*2 - $offset + 1" | bc)
               echo "Добавляем в плейлист $lines новых фотографий, начиная c $offset"
               cat "$RECENT_LIST" "$RECENT_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
@@ -531,7 +531,7 @@ FRAME)
             else
               lines=$(wc -l "$OLDER_LIST" | cut -d ' ' -f 1)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
-              tail=$(echo "$lines + $offset" | bc)
+              tail=$(echo "$lines*2 - $offset + 1" | bc)
               echo "Добавляем в плейлист $lines старых фотографий, начиная c $offset"
               cat "$OLDER_LIST" "$OLDER_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
