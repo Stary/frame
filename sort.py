@@ -7,6 +7,7 @@ import time
 import subprocess
 import geo
 import json
+import sys
 
 meta = dict()
 
@@ -18,6 +19,14 @@ def save_meta(source_dir):
 
 
 def creation_date(path_to_file, force_exif=False):
+    """
+    Extract creation date from a file, either from its filename (if it starts with a date in the format YYYYMMDD_HHMMSS)
+    or from its EXIF metadata (if available).
+
+    :param path_to_file: path to the file
+    :param force_exif: if True, ignore filename and force extraction from EXIF metadata
+    :return: creation date as a Unix timestamp, or None if extraction failed
+    """
     global meta
 
     filename = os.path.basename(path_to_file)
@@ -74,9 +83,14 @@ def creation_date(path_to_file, force_exif=False):
 
 source_dir=''
 dirs = ["/Users/sergey/Photo/icloud", "/home/orangepi/frame"]
-for d in dirs:
-    if os.path.isdir(d):
-        source_dir = d
+
+if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]):
+    source_dir = sys.argv[1]
+else:
+    for d in dirs:
+        if os.path.isdir(d):
+            source_dir = d
+            break
 count = 0
 known_hash = dict()
 known_name = dict()
@@ -84,47 +98,55 @@ known_ct = dict()
 files = dict()
 
 
-for i in sorted(os.scandir(source_dir), key=lambda e: e.name):
-    if i.is_file():
-        count += 1
-        path = i.path.split(os.sep)[:-1]
-        name_parts = i.name.split('.')
-        ext_i = -1
-        name = '.'.join(name_parts[:ext_i])
-        ext = '.'.join(name_parts[ext_i:]).lower()
-        hash = hashlib.md5(open(i.path, 'rb').read()).hexdigest()
-        #hash = uuid.uuid4().hex
-        #name2 = re.sub(r'[\W_ийеё]+', '', name.lower())
+def process_dir(cur_dir, target_dir):
+    global count
+    global known_hash
+    global known_name
+    for i in sorted(os.scandir(cur_dir), key=lambda e: e.name):
+        if i.is_file():
+            count += 1
+            path = i.path.split(os.sep)[:-1]
+            name_parts = i.name.split('.')
+            ext_i = -1
+            name = '.'.join(name_parts[:ext_i])
+            ext = '.'.join(name_parts[ext_i:]).lower()
+            hash = hashlib.md5(open(i.path, 'rb').read()).hexdigest()
+            #hash = uuid.uuid4().hex
+            #name2 = re.sub(r'[\W_ийеё]+', '', name.lower())
 
-        full_path = i.path
-        ctime = time.localtime(creation_date(full_path, force_exif=True))
-        ct = f"{ctime.tm_year}{ctime.tm_mon:02d}{ctime.tm_mday:02d}_{ctime.tm_hour:02d}{ctime.tm_min:02d}{ctime.tm_sec:02d}"
-        suffix = '.' + ext if ext != '' else ''
-        suffix_uniq = '_' + str(count) + suffix
-        new_name = os.path.join(os.sep.join(path), f"{ct}{suffix}")
-        new_name_uniq = os.path.join(os.sep.join(path), f"{ct}{suffix_uniq}")
+            full_path = i.path
+            ctime = time.localtime(creation_date(full_path, force_exif=True))
+            ct = f"{ctime.tm_year}{ctime.tm_mon:02d}{ctime.tm_mday:02d}_{ctime.tm_hour:02d}{ctime.tm_min:02d}{ctime.tm_sec:02d}"
+            suffix = '.' + ext if ext != '' else ''
+            suffix_uniq = '_' + str(count) + suffix
+            new_name = os.path.join(os.sep.join(target_dir), f"{ct}{suffix}")
+            new_name_uniq = os.path.join(os.sep.join(target_dir), f"{ct}{suffix_uniq}")
 
-        if hash in known_hash:
-            print(f"{count}. {full_path} is a copy of {known_hash[hash]}")
-            os.remove(full_path)
-        else:
-            known_hash[hash] = full_path
+            if hash in known_hash:
+                print(f"{count}. {full_path} is a copy of {known_hash[hash]}")
+                os.remove(full_path)
+            else:
+                known_hash[hash] = full_path
 
-            if new_name != full_path:
-                if os.path.isfile(new_name):
-                    print(f"{count}!{full_path} => {new_name_uniq}")
-                    os.rename(full_path, new_name_uniq)
-                    meta[new_name_uniq] = copy.deepcopy(meta[full_path])
-                else:
-                    print(f"{count}.{full_path} => {new_name}")
-                    os.rename(full_path, new_name)
-                    meta[new_name] = copy.deepcopy(meta[full_path])
-                del meta[full_path]
+                if new_name != full_path:
+                    if os.path.isfile(new_name):
+                        print(f"{count}!{full_path} => {new_name_uniq}")
+                        os.rename(full_path, new_name_uniq)
+                        meta[new_name_uniq] = copy.deepcopy(meta[full_path])
+                    else:
+                        print(f"{count}.{full_path} => {new_name}")
+                        os.rename(full_path, new_name)
+                        meta[new_name] = copy.deepcopy(meta[full_path])
+                    del meta[full_path]
 
-       # files[full_path] = {"ct": ct, "ext": ext.lower(), "hash": hash, "path": os.sep.join(path)}
-        if count % 100 == 0:
-            print(f"======== {count} files processed =======")
-            save_meta(source_dir)
+           # files[full_path] = {"ct": ct, "ext": ext.lower(), "hash": hash, "path": os.sep.join(path)}
+            if count % 100 == 0:
+                print(f"======== {count} files processed =======")
+                save_meta(cur_dir)
+        elif i.is_dir():
+            process_dir(i.path, target_dir)
+
+process_dir(source_dir, source_dir)
 
 save_meta(source_dir)
         #print(json.dumps(meta, indent=4, sort_keys=True, ensure_ascii=False))
