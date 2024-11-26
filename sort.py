@@ -57,7 +57,7 @@ def creation_date(path_to_file, force_exif=False):
             meta[path_to_file]['lon'] = longitude
             meta[path_to_file]['address'] = geo.get_place_descr(latitude, longitude, raw=True)
 
-        for p in ('Create Date', 'Date Created', 'Date/Time Original', 'GPS Date/Time'):
+        for p in ('Create Date', 'Date Created', 'Date/Time Original', 'GPS Date/Time', 'File Modification Date/Time'):
             if p in exif:
                 try:
                     time_obj = time.strptime(exif[p][0:19], '%Y:%m:%d %H:%M:%S')
