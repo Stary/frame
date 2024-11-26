@@ -119,8 +119,8 @@ def process_dir(cur_dir, target_dir):
             ct = f"{ctime.tm_year}{ctime.tm_mon:02d}{ctime.tm_mday:02d}_{ctime.tm_hour:02d}{ctime.tm_min:02d}{ctime.tm_sec:02d}"
             suffix = '.' + ext if ext != '' else ''
             suffix_uniq = '_' + str(count) + suffix
-            new_name = os.path.join(os.sep.join(target_dir), f"{ct}{suffix}")
-            new_name_uniq = os.path.join(os.sep.join(target_dir), f"{ct}{suffix_uniq}")
+            new_name = os.path.join(target_dir, f"{ct}{suffix}")
+            new_name_uniq = os.path.join(target_dir, f"{ct}{suffix_uniq}")
 
             if hash in known_hash:
                 print(f"{count}. {full_path} is a copy of {known_hash[hash]}")
