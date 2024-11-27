@@ -546,7 +546,6 @@ FRAME)
   PID=$(pgrep feh)
   if [ -z "$PID" ]
   then
-    date
     echo "Переход в режим рамки"
     unclutter_on
     set_power_mode on
@@ -696,7 +695,6 @@ FRAME)
 #    fi
 
 
-    set -x
     PID=$(pgrep feh)
     if [ -z "$PID" ]
     then
@@ -729,8 +727,6 @@ CLOCK)
   fi
   wmctrl -r conky -b add,fullscreen,above
   set_power_mode on
-  #xset dpms force on
-  #xset -dpms
   ;;
 DESKTOP)
   PID1=$(pgrep feh)
@@ -744,14 +740,10 @@ DESKTOP)
     pkill feh
     pkill conky
     set_power_mode on
-    #set_panel on
-    #xset dpms force on
-    #xset -dpms
   fi
   ;;
 OFF)
   set_power_mode standby
-  #xset dpms force off
   ;;
 *)
   echo "Неизвестный режим '$target_mode'"
