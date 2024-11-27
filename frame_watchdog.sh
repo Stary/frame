@@ -69,7 +69,9 @@ function unclutter_on {
 
 function set_panel {
   export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$UID/bus
-  if [ "X$1" == "Xoff" ]
+  opacity=$(xfconf-query -c xfce4-panel -p /panels/panel-1/leave-opacity)
+
+  if [ "X$1" == "Xoff" ] && [ "$opacity" -eq "100" ]
   then
     echo "Панель делаем невидимой"
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2
@@ -79,7 +81,8 @@ function set_panel {
     xfconf-query --create -t int  -c xfce4-desktop -p /desktop-icons/style -s 0
     xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-home -s false
     xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-removable -s false
-  else
+  elif [ "X$1" != "Xoff" ] && [ "$opacity" -ne "100" ]
+  then
     echo "Панель делаем видимой"
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 0
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/leave-opacity -s 100
@@ -88,6 +91,8 @@ function set_panel {
     xfconf-query --create -t int  -c xfce4-desktop -p /desktop-icons/style -s 2
     xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-home -s true
     xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-removable -s true
+  else
+    echo "Ничего не делаем - текущая непрозрачность $opacity соответствует целевому режиму отображения панели $1"
   fi
   xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-style -s 2
 }
@@ -519,6 +524,14 @@ else
 
 fi
 
+if [ "X$HIDE_PANEL" == "Xyes" ]
+then
+  set_panel off
+else
+  set_panel on
+fi
+
+
 case "$target_mode" in
 FRAME)
   pkill conky
@@ -539,11 +552,6 @@ FRAME)
     set_power_mode on
     #xset dpms force on
     #xset -dpms
-    if [ "X$HIDE_PANEL" == "Xyes" ]
-    then
-      echo "Скрываем панель управления и меню"
-      set_panel off
-    fi
 
     for d in $DIRS
     do
@@ -713,11 +721,6 @@ CLOCK)
   if [ -z "$PID" ]
   then
     echo "Переход в режим часов"
-    if [ "X$HIDE_PANEL" == "Xyes" ]
-    then
-      echo "Скрываем панель управления и меню"
-      set_panel off
-    fi
     unclutter_on
     #Конфигурация часов сохранена в файле ~/.config/conky/conky.conf
     conky
@@ -741,7 +744,7 @@ DESKTOP)
     pkill feh
     pkill conky
     set_power_mode on
-    set_panel on
+    #set_panel on
     #xset dpms force on
     #xset -dpms
   fi
