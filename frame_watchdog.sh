@@ -68,6 +68,7 @@ function unclutter_on {
 }
 
 function set_panel {
+  export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$UID/bus
   if [ "X$1" == "Xoff" ]
   then
     echo "Панель делаем невидимой"
