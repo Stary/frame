@@ -72,20 +72,23 @@ function set_panel {
   then
     echo "Панель делаем невидимой"
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2
-    xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-style -s 1
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/leave-opacity -s 0
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/enter-opacity -s 0
     #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-rgba -s 0
     xfconf-query --create -t int  -c xfce4-desktop -p /desktop-icons/style -s 0
+    xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-home -s false
+    xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-removable -s false
   else
     echo "Панель делаем видимой"
-    #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2
-    #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-style -s 1
-    #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/leave-opacity -s 0
-    #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/enter-opacity -s 0
+    xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 0
+    xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/leave-opacity -s 100
+    xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/enter-opacity -s 100
     ##xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-rgba -s 0
-    #xfconf-query --create -t int  -c xfce4-desktop -p /desktop-icons/style -s 0
+    xfconf-query --create -t int  -c xfce4-desktop -p /desktop-icons/style -s 2
+    xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-home -s true
+    xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-removable -s true
   fi
+  xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-style -s 2
 }
 
 function set_power_mode {
@@ -446,8 +449,6 @@ fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
 
-
-
 ############################################################################################
 
 shopt -s extglob
@@ -455,7 +456,7 @@ shopt -s extglob
 
 NTP=$(chronyc tracking | grep -i status | grep -i normal | wc -l)
 
-if (( $NTP == 0 ))
+if [ "$NTP" -eq "0" ]
 then
   echo "Синхронизация с NTP не работает, включаем принудительный дневной режим"
   target_mode=FRAME
