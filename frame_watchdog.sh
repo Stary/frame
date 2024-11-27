@@ -22,9 +22,10 @@ FONT=FreeMono/24
 GEO_MAX_LEN=60
 TIMEZONE=Moscow
 SCREEN_ORIENTATION=auto
-SCHEDULE=05:00-CLOCK,07:00-FRAME,22:00-CLOCK,23:30-OFF
+SCHEDULE=05:00-CLOCK,07:00-FRAME,09:00-DESKTOP,18:00-FRAME,22:00-CLOCK,23:30-OFF
 UPDATE=no
 REBOOT=no
+HIDE_PANEL=no
 
 CLOCK_COLOR=C8320A
 CLOCK_SIZE=560
@@ -56,6 +57,51 @@ WIFI_DEV='wlan0'
 
 WIFI_SSID=''
 WIFI_PASSWORD=''
+
+
+function unclutter_on {
+  unclutter_pid=$(pgrep unclutter)
+  if [ -z "$unclutter_pid" ]; then
+    echo "Запускаем unclutter"
+    unclutter -root >/dev/null 2>&1 &
+  fi
+}
+
+function set_panel {
+  if [ "X$1" == "Xoff" ]
+  then
+    echo "Панель делаем невидимой"
+    xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2
+    xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-style -s 1
+    xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/leave-opacity -s 0
+    xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/enter-opacity -s 0
+    #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-rgba -s 0
+    xfconf-query --create -t int  -c xfce4-desktop -p /desktop-icons/style -s 0
+  else
+    echo "Панель делаем видимой"
+    #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2
+    #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-style -s 1
+    #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/leave-opacity -s 0
+    #xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/enter-opacity -s 0
+    ##xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-rgba -s 0
+    #xfconf-query --create -t int  -c xfce4-desktop -p /desktop-icons/style -s 0
+  fi
+}
+
+function set_power_mode {
+  if [ "X$1" == "Xon" ]
+  then
+    echo "Включаем дисплей"
+    xset dpms force on
+    xset -dpms
+  else
+    echo "Выключаем дисплей"
+    xset dpms force off
+  fi
+  xfconf-query --create -t uint -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-off -s 0
+  xfconf-query --create -t uint -c xfce4-power-manager -p /xfce4-power-manager/dpms-on-ac-sleep -s 0
+  xfconf-query --create -t uint -c xfce4-power-manager -p /xfce4-power-manager/inactivity-on-ac -s 0
+}
 
 function internet { wget -q --spider http://google.com 2>/dev/null && chronyc tracking | grep -i status | grep -i normal | wc -l; }
 
@@ -323,8 +369,13 @@ CLOCK_SIZE=$CLOCK_SIZE
 CLOCK_OFFSET=$CLOCK_OFFSET
 CLOCK_VOFFSET=$CLOCK_VOFFSET
 
+#Опция HIDE_PANEL=yes позволяет скрыть панель с элементами управления и меню с программами
+#При этом сама панель не удаляется, но делается прозрачной, поэтому для открытия меню
+#достаточно кликнуть в левом верхнем углу экрана
+HIDE_PANEL=$HIDE_PANEL
+
 #Расписание задается как множество пар время-режим через запятую
-#время в формате 23:59, режим - FRAME (слайдшоу), CLOCK (часы) или OFF (выключенный экран)
+#время в формате 23:59, режим - FRAME (слайдшоу), CLOCK (часы), DESKTOP (рабочий стол) или OFF (выключенный экран)
 #Например,
 #SCHEDULE=23:00-OFF,5:00-CLOCK,8:00-FRAME,22:00-CLOCK
 SCHEDULE=$SCHEDULE
@@ -395,10 +446,7 @@ fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
 
-unclutter_pid=$(pgrep unclutter)
-if [ -z "$unclutter_pid" ]; then
-  unclutter -root >/dev/null 2>&1 &
-fi
+
 
 ############################################################################################
 
@@ -485,8 +533,16 @@ FRAME)
   then
     date
     echo "Переход в режим рамки"
-    xset dpms force on
-    xset -dpms
+    unclutter_on
+    set_power_mode on
+    #xset dpms force on
+    #xset -dpms
+    if [ "X$HIDE_PANEL" == "Xyes" ]
+    then
+      echo "Скрываем панель управления и меню"
+      set_panel off
+    fi
+
     for d in $DIRS
     do
       if [ -d "$d" ]
@@ -649,23 +705,48 @@ FRAME)
   ;;
 CLOCK)
   pkill feh
+
 #  PID=`pgrep dclock`
   PID=$(pgrep conky)
   if [ -z "$PID" ]
   then
-    date
     echo "Переход в режим часов"
+    if [ "X$HIDE_PANEL" == "Xyes" ]
+    then
+      echo "Скрываем панель управления и меню"
+      set_panel off
+    fi
+    unclutter_on
     #Конфигурация часов сохранена в файле ~/.config/conky/conky.conf
     conky
 #    dclock -nobell -miltime -tails -noscroll -blink -nofade -noalarm -thickness 0.12 -slope 70.0 -bd "black" -bg "black" -fg "darkorange" -led_off "black" &
     sleep 2s
   fi
   wmctrl -r conky -b add,fullscreen,above
-  xset dpms force on
-  xset -dpms
+  set_power_mode on
+  #xset dpms force on
+  #xset -dpms
+  ;;
+DESKTOP)
+  PID1=$(pgrep feh)
+  PID2=$(pgrep conky)
+  PID3=$(pgrep unclutter)
+
+  if [ -n "$PID1" ] || [ -n "$PID2" ] || [ -n "$PID3" ]
+  then
+    echi "Переход в режим рабочего стола"
+    pkill unclutter
+    pkill feh
+    pkill conky
+    set_power_mode on
+    set_panel on
+    #xset dpms force on
+    #xset -dpms
+  fi
   ;;
 OFF)
-  xset dpms force off
+  set_power_mode standby
+  #xset dpms force off
   ;;
 *)
   echo "Неизвестный режим '$target_mode'"
