@@ -91,8 +91,6 @@ function set_panel {
     xfconf-query --create -t int  -c xfce4-desktop -p /desktop-icons/style -s 2
     xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-home -s true
     xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-removable -s true
-  else
-    echo "Ничего не делаем - текущая непрозрачность $opacity соответствует целевому режиму отображения панели $1"
   fi
   xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-style -s 2
 }
@@ -316,7 +314,7 @@ then
       echo "Сеть подключена, но доступен только шлюз по-умолчанию. Вероятно, проблема у провайдера"
       ;;
     $NET_OK)
-      echo "Все отлично, внешние ресурсы доступны"
+      echo "Сеть подключена, внешние ресурсы доступны"
       ;;
     *)
       echo "Неизвестный статус сети: $st"
