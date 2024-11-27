@@ -734,7 +734,7 @@ DESKTOP)
 
   if [ -n "$PID1" ] || [ -n "$PID2" ] || [ -n "$PID3" ]
   then
-    echi "Переход в режим рабочего стола"
+    echo "Переход в режим рабочего стола"
     pkill unclutter
     pkill feh
     pkill conky
