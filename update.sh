@@ -144,7 +144,7 @@ fi
 
 echo -e "$MEDIA_PASSWD\n$MEDIA_PASSWD" | sudo passwd "$MEDIA_USER"
 
-if [ ! -d "$DEMO_DIR" ]
+if [ ! -d "$DEMO_DIR" ] || [ "$(find "$DEMO_DIR" -type f | wc -l)" -eq 0 ]
 then
   sudo mkdir -p "$DEMO_DIR"
   sudo chown -R $USER:$MEDIA_USER "$DEMO_DIR"
