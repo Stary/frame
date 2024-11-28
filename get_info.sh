@@ -14,6 +14,7 @@ BIN_DIR=$HOME/bin
 MEDIA_USER=media
 MEDIA_PASSWD=$(cat ~/user.dat)
 IP=$(ifconfig | grep inet | grep -v inet6 | grep -v 127.0.0.1 | sed 's/.*inet *//' | sed 's/ *netmask.*//')
+WIFI_SSID=$(sudo nmcli --fields CONNECTION,STATE,DEVICE  d | grep -v -i disconnected | grep -i connected | grep wlan | cut -d ' ' -f 1)
 
 uptime=$(awk '{print $1}' /proc/uptime | sed 's/\..*//')
 changed_files=$(find $BIN_DIR -type f -mmin -5 | grep -v pycache)
@@ -21,13 +22,14 @@ if [ "$uptime" -lt "300" ] || [ -n "$changed_files" ]
 then
   echo "Фоторамка v.$VERSION"
   echo "Просто подключите флэшку с фотографиями и наслаждайтесь воспоминаниями!"
-  echo "Настройки слайдшоу и часов будут сохранены на флэшке, их можно редактировать."
-  if [ -z "$IP" ]
+  echo "Поддерживаются флэшки с файловой системой FAT32, записанные на компьютере с любой версией Windows."
+  echo "Настройки слайдшоу и часов будут сохранены на флэшке в файле frame.cfg, их можно редактировать."
+  if [ -z "$IP" ] || [ -z "$WIFI_SSID" ]
   then
     echo "Для подключения рамки к сети создайте на флэшке файл wifi.txt с двумя строками:"
     echo "в первой строке укажите название сети WiFi, во второй - пароль."
   else
-    echo "Протокол: SFTP, IP: $IP, порт: 22, пользователь: $MEDIA_USER, пароль: $MEDIA_PASSWD"
+    echo "Протокол: SFTP, Сеть: $WIFI_SSID, IP: $IP, порт: 22, пользователь: $MEDIA_USER, пароль: $MEDIA_PASSWD"
     echo "Флэшка: /media/usb, папка для фотографий на встроенном MicroSD - /media/photo"
   fi
   #echo "+7 999 999-99-99"
