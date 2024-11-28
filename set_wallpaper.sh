@@ -29,19 +29,6 @@ then
 
   export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$UID/bus
 
-  for p in $(xfconf-query -c xfce4-desktop -l | grep -i last-image)
-  do
-    xfconf-query -c xfce4-desktop -p "$p" -s "$bgimage"
-  done
-  for p in $(xfconf-query -c xfce4-desktop -l | grep -i image-style)
-  do
-    xfconf-query -c xfce4-desktop -p "$p" -s $IMAGE_STYLE
-  done
-  for p in $(xfconf-query -c xfce4-desktop -l | grep -i rgba1)
-  do
-    xfconf-query -c xfce4-desktop -p "$p" -t uint -s 0
-  done
-
   for p in $(xfconf-query -c xfce4-desktop -l | grep -i color-style)
   do
     xfconf-query -c xfce4-desktop -p "$p" -s 0
@@ -58,6 +45,21 @@ then
   do
     xfconf-query -c xfce4-desktop -p "$p" -s true
   done
+
+  for p in $(xfconf-query -c xfce4-desktop -l | grep -i last-image)
+  do
+    xfconf-query -c xfce4-desktop -p "$p" -s "$bgimage"
+  done
+  for p in $(xfconf-query -c xfce4-desktop -l | grep -i image-style)
+  do
+    xfconf-query -c xfce4-desktop -p "$p" -s $IMAGE_STYLE
+  done
+  for p in $(xfconf-query -c xfce4-desktop -l | grep -i rgba1)
+  do
+    xfconf-query -c xfce4-desktop -p "$p" -t uint -s 0
+  done
+
+
 fi
 
 #unclutter_pid=$(pgrep unclutter)
