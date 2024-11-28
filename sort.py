@@ -124,7 +124,7 @@ def process_dir(cur_dir, target_dir):
             ctime = time.localtime(creation_date(full_path, force_exif=True))
             ct = f"{ctime.tm_year}{ctime.tm_mon:02d}{ctime.tm_mday:02d}_{ctime.tm_hour:02d}{ctime.tm_min:02d}{ctime.tm_sec:02d}"
             suffix = '.' + ext if ext != '' else ''
-            suffix_uniq = '_' + str(count) + suffix
+            suffix_uniq = f'_{count:05d}{suffix}'
             new_name = os.path.join(cur_dir, f"{ct}{suffix}")
             new_name_uniq = os.path.join(cur_dir, f"{ct}{suffix_uniq}")
 
