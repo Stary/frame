@@ -5,6 +5,8 @@ import re
 import platform
 import time
 import subprocess
+import traceback
+
 import geo
 import json
 import sys
@@ -68,7 +70,7 @@ def creation_date(path_to_file, force_exif=False):
                 except ValueError as ve:
                     pass
     except Exception as e:
-        print(f"Exception occured for file {path_to_file}")
+        print(f"Exception occured for file {path_to_file}: {traceback.format_exc()}")
 
     if platform.system() in ['Windows', 'Linux']:
         return os.path.getctime(path_to_file)
