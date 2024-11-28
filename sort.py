@@ -42,12 +42,26 @@ def creation_date(path_to_file, force_exif=False):
         print(f"Timestamp extracted from filename {filename}: {time_obj}")
         return time.mktime(time_obj)
 
+#    if not force_exif:
+#        m = re.search(r'(20[0-9]{2}\_[01][0-9]\_[0-3][0-9])', path_to_file)
+#        if m is not None:
+#            time_obj = time.strptime(m.group(1), '%Y_%m_%d')
+#            print(f"Timestamp extracted from path {path_to_file}: {time_obj}")
+#            return time.mktime(time_obj)
+
     try:
+        output = None
         output_enc=subprocess.run(['exiftool', '-n', path_to_file], stdout=subprocess.PIPE).stdout
-        try:
-            output=output_enc.decode('utf-8')
-        except UnicodeDecodeError as e:
-            output=output_enc.decode('cp1251')
+        for enc in ('utf-8', 'cp1251', 'latin-1', 'ascii'):
+            try:
+                output=output_enc.decode(enc)
+                break
+            except UnicodeDecodeError:
+                pass
+        if output is None:
+            print(f"Couldn't decode file {path_to_file}")
+            return None
+
         exif = dict()
         for line in output.splitlines():
             attr = re.split(r'\s*:\s+', line, maxsplit=1)
