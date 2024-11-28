@@ -43,7 +43,11 @@ def creation_date(path_to_file, force_exif=False):
         return time.mktime(time_obj)
 
     try:
-        output=subprocess.run(['exiftool', '-n', path_to_file], stdout=subprocess.PIPE).stdout.decode('utf-8')
+        output_enc=subprocess.run(['exiftool', '-n', path_to_file], stdout=subprocess.PIPE).stdout
+        try:
+            output=output_enc.decode('utf-8')
+        except UnicodeDecodeError as e:
+            output=output_enc.decode('cp1251')
         exif = dict()
         for line in output.splitlines():
             attr = re.split(r'\s*:\s+', line, maxsplit=1)
