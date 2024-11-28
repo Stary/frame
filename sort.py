@@ -119,8 +119,8 @@ def process_dir(cur_dir, target_dir):
             ct = f"{ctime.tm_year}{ctime.tm_mon:02d}{ctime.tm_mday:02d}_{ctime.tm_hour:02d}{ctime.tm_min:02d}{ctime.tm_sec:02d}"
             suffix = '.' + ext if ext != '' else ''
             suffix_uniq = '_' + str(count) + suffix
-            new_name = os.path.join(target_dir, f"{ct}{suffix}")
-            new_name_uniq = os.path.join(target_dir, f"{ct}{suffix_uniq}")
+            new_name = os.path.join(cur_dir, f"{ct}{suffix}")
+            new_name_uniq = os.path.join(cur_dir, f"{ct}{suffix_uniq}")
 
             if hash in known_hash:
                 print(f"{count}. {full_path} is a copy of {known_hash[hash]}")
@@ -139,10 +139,10 @@ def process_dir(cur_dir, target_dir):
                         meta[new_name] = copy.deepcopy(meta[full_path])
                     del meta[full_path]
 
-           # files[full_path] = {"ct": ct, "ext": ext.lower(), "hash": hash, "path": os.sep.join(path)}
+            # files[full_path] = {"ct": ct, "ext": ext.lower(), "hash": hash, "path": os.sep.join(path)}
             if count % 100 == 0:
                 print(f"======== {count} files processed =======")
-                save_meta(cur_dir)
+                save_meta(target_dir)
         elif i.is_dir():
             process_dir(i.path, target_dir)
 
