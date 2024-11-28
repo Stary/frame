@@ -10,9 +10,24 @@ else
   bgimage=$1
 fi
 
+
+if [ -n "$2" ]; then
+  IMAGE_STYLE=$2
+else
+  #IMAGE_STYLE=$(xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-style -s)
+  #1 - centered
+  #2 - tiled
+  #3 - fit
+  #4 - stretched
+  #5 - zoom
+  IMAGE_STYLE=5
+fi
+
 if [ "$bgimage" != "" ] && [ -s "$bgimage" ]
 then
   echo Changing background to "$bgimage"
+
+  export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$UID/bus
 
   for p in $(xfconf-query -c xfce4-desktop -l | grep -i last-image)
   do
@@ -20,7 +35,28 @@ then
   done
   for p in $(xfconf-query -c xfce4-desktop -l | grep -i image-style)
   do
-    xfconf-query -c xfce4-desktop -p "$p" -s 5
+    xfconf-query -c xfce4-desktop -p "$p" -s $IMAGE_STYLE
+  done
+  for p in $(xfconf-query -c xfce4-desktop -l | grep -i rgba1)
+  do
+    xfconf-query -c xfce4-desktop -p "$p" -t uint -s 0
+  done
+
+  for p in $(xfconf-query -c xfce4-desktop -l | grep -i color-style)
+  do
+    xfconf-query -c xfce4-desktop -p "$p" -s 0
+  done
+  for p in $(xfconf-query -c xfce4-desktop -l | grep -i single-workspace-mode)
+  do
+    xfconf-query -c xfce4-desktop -p "$p" -s false
+  done
+  for p in $(xfconf-query -c xfce4-desktop -l | grep -i color-style)
+  do
+    xfconf-query -c xfce4-desktop -p "$p" -s 3
+  done
+  for p in $(xfconf-query -c xfce4-desktop -l | grep -i single-workspace-mode)
+  do
+    xfconf-query -c xfce4-desktop -p "$p" -s true
   done
 fi
 

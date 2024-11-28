@@ -234,6 +234,11 @@ else
   echo "Логотип актуальный, обновление не требуется"
 fi
 
+if [ -f "$target_file" ]
+then
+  $BIN_DIR/$WALLPAPER_SCRIPT "$target_file" 1
+fi
+
 ########################################################################
 #Включение ежеминутного запуска контрольного скрипта
 
@@ -260,7 +265,7 @@ then
   pkill conky
   pkill unclutter
   pkill -f feh
-  $BIN_DIR/$WALLPAPER_SCRIPT "$DEMO_DIR"
+  #$BIN_DIR/$WALLPAPER_SCRIPT "$DEMO_DIR"
   $BIN_DIR/$MAIN_SCRIPT
 fi
 
