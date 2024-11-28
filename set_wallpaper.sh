@@ -54,12 +54,11 @@ then
   do
     xfconf-query -c xfce4-desktop -p "$p" -s $IMAGE_STYLE
   done
+
   for p in $(xfconf-query -c xfce4-desktop -l | grep -i rgba1)
   do
-    xfconf-query -c xfce4-desktop -p "$p" -t uint -s 0
+    xfconf-query -c xfce4-desktop -p "$p" -t uint -s 0 -t uint -s 65535 -t uint -s 0 -t uint -s 65535 --create
   done
-
-
 fi
 
 #unclutter_pid=$(pgrep unclutter)
