@@ -235,7 +235,7 @@ else
 fi
 
 source_blackbg_file='blackbg.png'
-target_blackbg_file="$USER/blackbg.png"
+target_blackbg_file="$HOME/blackbg.png"
 
 if [ ! -s "$target_blackbg_file" ]
 then
