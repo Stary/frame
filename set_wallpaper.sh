@@ -57,7 +57,7 @@ then
 
   for p in $(xfconf-query -c xfce4-desktop -l | grep -i rgba1)
   do
-    xfconf-query -c xfce4-desktop -p "$p" -t uint -s 0 -t uint -s 65535 -t uint -s 0 -t uint -s 65535 --create
+    xfconf-query -c xfce4-desktop -p "$p" -t double -s 0 -t double -s 0 -t double -s 0 -t double -s 1
   done
 fi
 
