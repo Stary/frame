@@ -46,13 +46,14 @@ then
     xfconf-query -c xfce4-desktop -p "$p" -s true
   done
 
-  for p in $(xfconf-query -c xfce4-desktop -l | grep -i last-image)
-  do
-    xfconf-query -c xfce4-desktop -p "$p" -s "$bgimage"
-  done
   for p in $(xfconf-query -c xfce4-desktop -l | grep -i image-style)
   do
     xfconf-query -c xfce4-desktop -p "$p" -s $IMAGE_STYLE
+  done
+
+  for p in $(xfconf-query -c xfce4-desktop -l | grep -i last-image)
+  do
+    xfconf-query -c xfce4-desktop -p "$p" -s "$bgimage"
   done
 
   for p in $(xfconf-query -c xfce4-desktop -l | grep -i rgba1)
