@@ -234,13 +234,14 @@ else
   echo "Логотип актуальный, обновление не требуется"
 fi
 
-source_blackbg_file="blackbg.png"
+source_blackbg_file='blackbg.png'
 target_blackbg_file="$USER/blackbg.png"
 
 if [ ! -s "$target_blackbg_file" ]
 then
   echo "Скачиваем файл с черным фоном"
   $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$source_blackbg_file" "$target_blackbg_file"
+  echo "$YANDEX_DISK_DOWNLOAD_SCRIPT $YANDEX_DISK_PUBLIC_URL $source_blackbg_file $target_blackbg_file"
 fi
 
 if [ -s "$target_blackbg_file" ]
