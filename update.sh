@@ -206,37 +206,51 @@ rsync -av $SRC_DIR/$CONKY_FONT $CONKY_CONF_DIR
 ##################################################################
 #Обновление логотипа
 
-target_file='/usr/share/plymouth/themes/orangepi/watermark.png'
-target_md5=$(md5sum "$target_file" | cut -d ' ' -f 1)
+target_logo_file='/usr/share/plymouth/themes/orangepi/watermark.png'
+target_logo_md5=$(md5sum "$target_logo_file" | cut -d ' ' -f 1)
 
 #source_url='https://quietharbor.net/static/watermark.png'
-source_file='watermark.png'
-source_md5='bf7c2d23aa96006dc8e4cedb44c93bf1'
+source_logo_file='watermark.png'
+source_logo_md5='bf7c2d23aa96006dc8e4cedb44c93bf1'
 
 tmp_file='/tmp/watermark.png'
 
 #scp -P 57093 watermark.png root@quietharbor.net:/var/www/quietharbor.net/static
 #
 
-if [ "X$source_md5" != "X$target_md5" ]
+if [ "X$source_logo_md5" != "X$target_logo_md5" ]
 then
-  echo "Source MD5: $source_md5 != Target MD5: $target_md5"
+  echo "Source MD5: $source_logo_md5 != Target MD5: $target_logo_md5"
   #wget -O "$tmp_file" "$source_url"
-  $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$source_file" "$tmp_file"
+  $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$source_logo_file" "$tmp_file"
   tmp_md5=$(md5sum "$tmp_file" | cut -d ' ' -f 1)
-  if [ "X$tmp_md5" == "X$source_md5" ]
+  if [ "X$tmp_md5" == "X$source_logo_md5" ]
   then
     echo "Скачан корректный файл с логотипом, обновляем"
-    sudo cp -f $tmp_file $target_file
+    sudo cp -f $tmp_file $target_logo_file
     sudo update-initramfs -u
   fi
 else
   echo "Логотип актуальный, обновление не требуется"
 fi
 
-if [ -f "$target_file" ]
+source_blackbg_file="blackbg.png"
+target_blackbg_file="$USER/blackbg.png"
+
+if [ ! -s "$target_blackbg_file" ]
 then
-  $BIN_DIR/$WALLPAPER_SCRIPT "$target_file" 1
+  echo "Скачиваем файл с черным фоном"
+  $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$source_blackbg_file" "$target_blackbg_file"
+fi
+
+if [ -s "$target_blackbg_file" ]
+then
+  $BIN_DIR/$WALLPAPER_SCRIPT "$target_blackbg_file" 5
+fi
+
+if [ -f "$target_logo_file" ]
+then
+  $BIN_DIR/$WALLPAPER_SCRIPT "$target_logo_file" 1
 fi
 
 ########################################################################
@@ -256,7 +270,6 @@ if [ -f /var/run/reboot-required ]; then
   sleep 10
   sudo reboot
 fi
-
 
 changed_files=$(find "$BIN_DIR" -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
 if [ "$changed_files" -ne 0 ] || [ "X$OPTION" == "Xforce" ]
