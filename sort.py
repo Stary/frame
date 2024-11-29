@@ -102,7 +102,7 @@ def creation_date(path_to_file, force_exif=False):
             return stat.st_mtime
 
 source_dir=''
-dirs = ["/Users/sergey/Photo/icloud", "/home/orangepi/frame"]
+dirs = ["/Users/sergey/Photo/archive", "/Users/sergey/Photo/icloud", "/home/orangepi/frame"]
 
 if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]):
     source_dir = sys.argv[1]
