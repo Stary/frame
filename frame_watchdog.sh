@@ -582,8 +582,8 @@ FRAME)
           unlink "$RECENT_LIST" 2>/dev/null
           unlink "$OLDER_LIST" 2>/dev/null
 
-          find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin -$RECENT_MINUTES_FIRST | sort > "$RECENT_LIST"
-          find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin +$RECENT_MINUTES_FIRST | sort > "$OLDER_LIST"
+          find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin -$RECENT_MINUTES_FIRST | grep -v '/\.' | grep -v -i 'trash' | sort > "$RECENT_LIST"
+          find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin +$RECENT_MINUTES_FIRST | grep -v '/\.' | grep -v -i 'trash' | sort > "$OLDER_LIST"
 
           unlink "$PLAY_LIST" 2>/dev/null
 
