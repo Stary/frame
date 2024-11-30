@@ -377,7 +377,7 @@ GEO_MAX_LEN=$GEO_MAX_LEN
 #Таймзона - можно указать название города (Kaliningrad,Moscow) или часовой пояс (GMT+3)
 TIMEZONE=$TIMEZONE
 
-#Ориентация экрана - normal (соответствует аппаратному положению матрицу), left, right, auto (приведение к горизонтальному)
+#Ориентация экрана - normal (соответствует аппаратному положению матрицы), left, right, auto (приведение к горизонтальному)
 SCREEN_ORIENTATION=$SCREEN_ORIENTATION
 
 #Конфигурация часов
