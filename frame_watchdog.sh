@@ -218,13 +218,10 @@ fi
 
 while IFS= read -r -d '' file
 do
-  tmp_wifi_config=/tmp/wifi.cfg
   echo "Обнаружен файл с данными для подключения к сети WiFi: $file"
-  cat "$file" > $tmp_wifi_config
-  dos2unix $tmp_wifi_config
   WIFI_SSID2=""
   WIFI_PASSWORD2=""
-  for line in $(grep -v -e '^$' $tmp_wifi_config | head -2)
+  while IFS= read -r line
   do
     if [ "X$WIFI_SSID2" == 'X' ]; then
       WIFI_SSID2=$line
@@ -244,7 +241,7 @@ do
         fi
       fi
     fi
-  done
+  done < <(cat $file | dos2unix | grep -v -e "^$" | head -2)
   mv -f "$file" "$file.backup"
 done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)' -print0)
 
@@ -388,8 +385,8 @@ HIDE_PANEL=$HIDE_PANEL
 SCHEDULE=$SCHEDULE
 
 #Параметры подключения к сети WiFi
-WIFI_SSID=$WIFI_SSID
-WIFI_PASSWORD=$WIFI_PASSWORD
+WIFI_SSID="$WIFI_SSID"
+WIFI_PASSWORD="$WIFI_PASSWORD"
 
 #URL к публично-доступной папке на Яндекс-Диске. Если ссылка задана и активна, содержимое данной папки Я.Диска
 #будет регулярно синхронизироваться в локальную папку с фотографиями
