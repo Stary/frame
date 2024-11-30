@@ -230,19 +230,32 @@ do
         WIFI_PASSWORD2=$line
         if [ "X$WIFI_SSID2" != "X$WIFI_SSID" ] || [ "X$WIFI_PASSWORD2" != "X$WIFI_PASSWORD" ]
         then
-          WIFI_SSID=$WIFI_SSID2
-          WIFI_PASSWORD=$WIFI_PASSWORD2
-          echo "Подключаемся к сети $WIFI_SSID"
-          sudo nmcli device wifi connect "$WIFI_SSID" password "$WIFI_PASSWORD" ifname $WIFI_DEV
-          connection_status=$(internet)
-          echo "Статус подключения: $connection_status"
+          wifi_net_cnt=$(sudo nmcli connection show | grep -c "$WIFI_SSID2")
+          if [ "$wifi_net_cnt" -gt "0" ]
+          then
+            echo "Подключаемся к сети $WIFI_SSID2"
+            sudo nmcli device wifi connect "$WIFI_SSID2" password "$WIFI_PASSWORD2" ifname $WIFI_DEV
+            connection_status=$(internet)
+            echo "Статус подключения: $connection_status"
+            connected=$(sudo nmcli --fields IN-USE,SSID d wifi | grep -c -E -e "^\*\s+$WIFI_SSID2\b")
+            if [ "$connected" -gt "0" ]
+            then
+              echo "Успешно подключились к сети $WIFI_SSID2"
+              WIFI_SSID=$WIFI_SSID2
+              WIFI_PASSWORD=$WIFI_PASSWORD2
+              mv -f "$file" "$file.backup"
+            else
+              echo "Не удалось подключиться к сети $WIFI_SSID2"
+            fi
+          else
+            echo "Сеть $WIFI_SSID2 не нашлась в списке подключений"
+          fi
         else
           echo "Параметры сети в файле $file совпадают с уже известными"
         fi
       fi
     fi
   done < <(cat $file | dos2unix | grep -v -e "^$" | head -2)
-  mv -f "$file" "$file.backup"
 done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)' -print0)
 
 
