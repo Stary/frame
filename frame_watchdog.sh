@@ -230,7 +230,7 @@ do
         WIFI_PASSWORD2=$line
         if [ "X$WIFI_SSID2" != "X$WIFI_SSID" ] || [ "X$WIFI_PASSWORD2" != "X$WIFI_PASSWORD" ]
         then
-          wifi_net_cnt=$(sudo nmcli connection show | grep -c "$WIFI_SSID2")
+          wifi_net_cnt=$(sudo nmcli --fields SSID d wifi| grep -c "$WIFI_SSID2")
           if [ "$wifi_net_cnt" -gt "0" ]
           then
             echo "Подключаемся к сети $WIFI_SSID2"
