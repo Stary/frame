@@ -220,7 +220,7 @@ local_logo_file="$HOME/watermark.png"
 $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$remote_logo_file" "$local_logo_file"
 if [ -s "$local_logo_file" ]
 then
-  local_logo_md5=$(md5sum "$target_logo_file" | cut -d ' ' -f 1)
+  local_logo_md5=$(md5sum "$local_logo_file" | cut -d ' ' -f 1)
   echo "Local MD5: $local_logo_md5 Target MD5: $target_logo_md5"
   if [ "X$local_logo_md5" != "X$target_logo_md5" ]
   then
