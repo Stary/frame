@@ -21,6 +21,7 @@ changed_files=$(find $BIN_DIR -type f -mmin -5 | grep -v pycache)
 if [ "$uptime" -lt "300" ] || [ -n "$changed_files" ]
 then
   echo "Фоторамка v.$VERSION"
+  echo ""
   echo "Просто вставьте флэшку с фотографиями и наслаждайтесь воспоминаниями!"
   echo ""
   if [ -z "$IP" ] || [ -z "$WIFI_SSID" ]

@@ -246,6 +246,7 @@ do
               mv -f "$file" "$file.backup"
             else
               echo "Не удалось подключиться к сети $WIFI_SSID2"
+              sudo nmcli con del "$WIFI_SSID2"
             fi
           else
             echo "Сеть $WIFI_SSID2 не нашлась в списке подключений"
