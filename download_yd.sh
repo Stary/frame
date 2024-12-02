@@ -33,27 +33,34 @@ if [ -z "$DOWNLOAD_URL" ]; then
     exit 1
 fi
 
-if [ -s "$TARGET_PATH" ]
-then
-  LOCAL_MD5=$(md5sum "$TARGET_PATH" | cut -d ' ' -f 1)
-  REMOTE_MD5=$(echo "$METADATA" | grep -oP '"md5":"\K[^"]+')
-  if [ "X$REMOTE_MD5" == "X$LOCAL_MD5" ]
-  then
-    echo "File $FILENAME has already been downloaded, as its md5 matches the remote one, no need to download it once again, leaving."
-    exit 0
-  else
-    echo "File $FILENAME found at $TARGET_PATH, but its md5 differs from the remote one, so let's download it over again."
-  fi
+TEMP_PATH="${TARGET_PATH}.tmp"
+
+if [ -s "$TARGET_PATH" ]; then
+    LOCAL_MD5=$(md5sum "$TARGET_PATH" | cut -d ' ' -f 1)
+    REMOTE_MD5=$(echo "$METADATA" | grep -oP '"md5":"\K[^"]+')
+    if [ "X$REMOTE_MD5" == "X$LOCAL_MD5" ]; then
+        echo "File $FILENAME has already been downloaded, as its md5 matches the remote one, no need to download it again."
+        exit 0
+    else
+        echo "File $FILENAME found at $TARGET_PATH, but its md5 differs from the remote one. Downloading again."
+    fi
 fi
 
-# Step 3: Download the file using wget
 echo "Downloading file: $FILENAME"
-wget -O "$TARGET_PATH" "$DOWNLOAD_URL"
+wget -O "$TEMP_PATH" "$DOWNLOAD_URL"
 
 if [ $? -eq 0 ]; then
-    echo "Download completed successfully: $TARGET_PATH"
+    DOWNLOADED_MD5=$(md5sum "$TEMP_PATH" | cut -d ' ' -f 1)
+    if [ "X$REMOTE_MD5" == "X$DOWNLOADED_MD5" ]; then
+        mv "$TEMP_PATH" "$TARGET_PATH"
+        echo "Download completed successfully: $TARGET_PATH"
+    else
+        echo "Error: Downloaded file's MD5 does not match the expected MD5."
+        rm "$TEMP_PATH"
+        exit 1
+    fi
 else
     echo "Error: Failed to download the file."
+    rm -f "$TEMP_PATH"
     exit 1
 fi
-
