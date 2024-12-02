@@ -152,13 +152,11 @@ function get_connection_status {
   web_available=0
   while read -r site
   do
-    echo "Site: $site"
     if [ -n "$site" ]
     then
       site_available=$(wget --spider --timeout=5 --tries=3 -q $site 2>/dev/null && echo 1)
       if [ "X$site_available" == "X1" ]
       then
-        echo "Сайт $site доступен"
         web_available=1
         break
       fi
