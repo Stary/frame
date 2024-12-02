@@ -146,8 +146,49 @@ function get_connection_status {
     return
   fi
 
-  web_available=$(wget --spider --timeout=3 --tries=3 -q https://ya.ru 2>/dev/null && echo 1)
+  #web_available=$(wget --spider --timeout=3 --tries=3 -q https://ya.ru 2>/dev/null && echo 1)
   ntp_available=$(chronyc tracking | grep -i status | grep -i normal | wc -l)
+
+  web_available=0
+  while read -r site
+  do
+    echo "Site: $site"
+    if [ -n "$site" ]
+    then
+      site_available=$(wget --spider --timeout=5 --tries=3 -q $site 2>/dev/null && echo 1)
+      if [ "X$site_available" == "X1" ]
+      then
+        echo "Сайт $site доступен"
+        web_available=1
+        break
+      fi
+    fi
+  done <<< $(shuf -n 5 << EOF
+https://ya.ru
+https://gmail.com
+https://mail.ru
+https://youtube.com
+https://yahoo.com
+https://dzen.ru
+https://t.me
+https://hh.ru
+https://market.yandex.ru
+https://kinopoisk.ru
+https://rutube.ru
+https://ok.ru
+https://whatsapp.com
+https://rambler.ru
+https://pikabu.ru
+https://lenta.ru
+https://aliexpress.ru
+https://tbank.ru
+https://news.mail.ru
+https://ria.ru
+https://dns-shop.ru
+https://drive2.ru
+https://mts.ru
+EOF
+)
 
   if [ "X$web_available" != "X1" ] || [ "X$ntp_available" == "X0" ]
   then
