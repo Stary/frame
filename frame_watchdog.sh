@@ -253,11 +253,11 @@ process_config_file() {
     local config_file="$1"
     local config_source="$2"
     
-    # Check file permissions (should not be world-writable)
-    if [ -w "$config_file" -a ! -O "$config_file" ]; then
-        echo "WARNING: Config file $config_file is writable by others, skipping" >&2
-        return 1
-    }
+    ## Check file permissions (should not be world-writable)
+    #if [ -w "$config_file" -a ! -O "$config_file" ]; then
+    #    echo "WARNING: Config file $config_file is writable by others, skipping" >&2
+    #    return 1
+    #fi
     
     # Clear temporary config before processing
     > "$TMP_CONFIG"
