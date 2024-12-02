@@ -238,66 +238,69 @@ then
 fi
 
 ########### Loading external config ##################
-TMP_CONFIG="/tmp/frame.cfg"
-if [ -s "$HOME/$CONFIG" ]
-then
-  grep -E -e "^[A-Z0-9_]+\=" "$HOME/$CONFIG" > $TMP_CONFIG
-  source "$TMP_CONFIG"
+SECURE_TMP_DIR=$(mktemp -d /tmp/frame_config.XXXXXX)
+if [ ! -d "$SECURE_TMP_DIR" ]; then
+    echo "ERROR: Could not create secure temporary directory" >&2
+    exit 1
 fi
+chmod 700 "$SECURE_TMP_DIR"
 
-if [ -s "$USB_DIR/$CONFIG" ]
-then
-  grep -E -e "^[A-Z0-_]+\=" "$USB_DIR/$CONFIG" > $TMP_CONFIG
-  source "$TMP_CONFIG"
-fi
+TMP_CONFIG="$SECURE_TMP_DIR/frame.cfg"
+touch "$TMP_CONFIG"
+chmod 600 "$TMP_CONFIG"
 
-
-##################################################################################################
-# Loading wifi connection details if any
-
-while IFS= read -r -d '' file
-do
-  echo "Обнаружен файл с данными для подключения к сети WiFi: $file"
-  WIFI_SSID2=""
-  WIFI_PASSWORD2=""
-  while IFS= read -r line
-  do
-    if [ "X$WIFI_SSID2" == 'X' ]; then
-      WIFI_SSID2=$line
-    else
-      if [ "X$WIFI_PASSWORD2" == 'X' ]; then
-        WIFI_PASSWORD2=$line
-        if [ "X$WIFI_SSID2" != "X$WIFI_SSID" ] || [ "X$WIFI_PASSWORD2" != "X$WIFI_PASSWORD" ]
-        then
-          wifi_net_cnt=$(sudo nmcli --fields SSID d wifi| grep -c "$WIFI_SSID2")
-          if [ "$wifi_net_cnt" -gt "0" ]
-          then
-            echo "Подключаемся к сети $WIFI_SSID2"
-            sudo nmcli device wifi connect "$WIFI_SSID2" password "$WIFI_PASSWORD2" ifname $WIFI_DEV
-            connection_status=$(internet)
-            echo "Статус подключения: $connection_status"
-            connected=$(sudo nmcli --fields IN-USE,SSID d wifi | grep -c -E -e "^\*\s+$WIFI_SSID2\b")
-            if [ "$connected" -gt "0" ]
-            then
-              echo "Успешно подключились к сети $WIFI_SSID2"
-              WIFI_SSID=$WIFI_SSID2
-              WIFI_PASSWORD=$WIFI_PASSWORD2
-            else
-              echo "Не удалось подключиться к сети $WIFI_SSID2"
-              sudo nmcli con del "$WIFI_SSID2"
-            fi
-            sudo mv -f "$file" "$file.backup"
-          else
-            echo "Сеть $WIFI_SSID2 не нашлась в списке подключений"
-          fi
+process_config_file() {
+    local config_file="$1"
+    local config_source="$2"
+    
+    # Check file permissions (should not be world-writable)
+    if [ -w "$config_file" -a ! -O "$config_file" ]; then
+        echo "WARNING: Config file $config_file is writable by others, skipping" >&2
+        return 1
+    }
+    
+    # Clear temporary config before processing
+    > "$TMP_CONFIG"
+    
+    # Process each line with strict validation
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip empty lines and comments
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+        
+        # Strict pattern matching for variable assignments
+        if [[ "$line" =~ ^[A-Z0-9_]+=([[:print:]]+)$ ]]; then
+            # Additional validation of the value
+            local var_name="${line%%=*}"
+            local var_value="${line#*=}"
+            
+            # Remove any potentially dangerous characters
+            var_value="${var_value//[$'\n\r']/}"
+            
+            # Log accepted entries
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [$config_source] Accepting: $var_name" >&2
+            
+            echo "$var_name=$var_value" >> "$TMP_CONFIG"
         else
-          echo "Параметры сети в файле $file совпадают с уже известными"
+            # Log rejected entries
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [$config_source] Rejecting invalid line: $line" >&2
         fi
-      fi
+    done < "$config_file"
+    
+    # Source the file only if it's non-empty and properly formatted
+    if [ -s "$TMP_CONFIG" ]; then
+        # Double-check the temporary file format
+        if grep -q -v '^[A-Z0-9_]\+=[[:print:]]\+$' "$TMP_CONFIG"; then
+            echo "ERROR: Malformed temporary config file, skipping" >&2
+            return 1
+        fi
+        source "$TMP_CONFIG"
     fi
-  done < <(cat $file | dos2unix | grep -v -e "^$" | head -2)
-done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)' -print0)
+}
 
+[ -s "$HOME/$CONFIG" ] && process_config_file "$HOME/$CONFIG" "HOME"
+[ -s "$USB_DIR/$CONFIG" ] && process_config_file "$USB_DIR/$CONFIG" "USB"
+
+rm -rf "$SECURE_TMP_DIR"
 
 ##########################################################################################################
 #Проверка статуса подключения, многоуровневая логика восстановления подключения
@@ -796,5 +799,3 @@ OFF)
 *)
   echo "Неизвестный режим '$target_mode'"
 esac
-
-
