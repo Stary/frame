@@ -277,7 +277,7 @@ process_config_file() {
             var_value="${var_value//[$'\n\r']/}"
             
             # Log accepted entries
-            echo "$(date '+%Y-%m-%d %H:%M:%S') [$config_source] Accepting: $var_name" >&2
+            #echo "$(date '+%Y-%m-%d %H:%M:%S') [$config_source] Accepting: $var_name" >&2
             
             echo "$var_name=$var_value" >> "$TMP_CONFIG"
         else
