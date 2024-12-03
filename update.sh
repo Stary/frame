@@ -82,6 +82,7 @@ MAIN_SCRIPT="frame_watchdog.sh"
 INFO_SCRIPT="get_info.sh"
 GEO_SCRIPT="geo.py"
 PLACE_SCRIPT="get_place.py"
+TM_SCRIPT="tm.sh"
 YANDEX_DISK_SYNC_SCRIPT="yd.py"
 YANDEX_DISK_DOWNLOAD_SCRIPT="download_yd.sh"
 YANDEX_DISK_PUBLIC_URL="https://disk.yandex.ru/d/8Jq0RAsDYAUIww"
@@ -268,6 +269,7 @@ then
   rsync -av $SRC_DIR/$INFO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$PLACE_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$GEO_SCRIPT $BIN_DIR
+  rsync -av $SRC_DIR/$TM_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$YANDEX_DISK_SYNC_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$YANDEX_DISK_DOWNLOAD_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$WALLPAPER_SCRIPT $BIN_DIR

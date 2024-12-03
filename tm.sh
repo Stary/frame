@@ -25,10 +25,11 @@ mount > "$TMP_LOG_DIR/mount"
 dmesg > "$TMP_LOG_DIR/dmesg"
 crontab -l > "$TMP_LOG_DIR/crontab"
 ifconfig -a > "$TMP_LOG_DIR/ifconfig"
+df -h > "$TMP_LOG_DIR/df"
 sudo nmcli d > "$TMP_LOG_DIR/nmcli.d"
 sudo nmcli d wifi > "$TMP_LOG_DIR/nmcli.d.wifi"
 sudo nmcli c > "$TMP_LOG_DIR/nmcli.c"
-iptables -L -n > "$TMP_LOG_DIR/iptables"
+sudo iptables -L -n > "$TMP_LOG_DIR/iptables"
 
 
 zip -r $report_zip $TMP_LOG_DIR
