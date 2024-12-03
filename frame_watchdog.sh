@@ -38,6 +38,7 @@ DEMO_DIR=/media/demo
 
 BIN_DIR=$HOME/bin
 LOG_DIR=/var/log/frame
+YANDEX_MAIL_APP_PASSWORD=''
 YANDEX_DISK_SYNC_SCRIPT='yd.py'
 CONKY_CONF=$HOME/.config/conky/conky.conf
 CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
@@ -394,6 +395,10 @@ UPDATE=no
 #Разовый автоматический перезапуск рамки, для разрешения выставить в yes. После применения автоматически сбрасывается в no
 REBOOT=no
 
+#Разовая отсылка логов разработчику, для разрешения выставить в yes. После применения автоматически сбрасывается в no
+#Функциональность работает только при указании пароля приложения Yandex Mail в переменной YANDEX_MAIL_APP_PASSWORD
+SEND_LOGS=no
+
 #Интервал между фотографиями в слайдшоу, в секундах
 DELAY=$DELAY
 
@@ -443,6 +448,11 @@ SCHEDULE=$SCHEDULE
 #Параметры подключения к сети WiFi
 WIFI_SSID="$WIFI_SSID"
 WIFI_PASSWORD="$WIFI_PASSWORD"
+
+#Пароль приложения Yandex Mail для отправки логов
+#Сформировать пароль можно в интерфейсе настроек аккаунта Yandex по ссылке
+#https://id.yandex.ru/security/app-passwords
+YANDEX_MAIL_APP_PASSWORD=$YANDEX_MAIL_APP_PASSWORD
 
 #URL к публично-доступной папке на Яндекс-Диске. Если ссылка задана и активна, содержимое данной папки Я.Диска
 #будет регулярно синхронизироваться в локальную папку с фотографиями

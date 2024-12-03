@@ -35,9 +35,20 @@ zip -r $report_zip $TMP_LOG_DIR
 
 # Get external IP address
 EXTERNAL_IP=$(curl -s https://ipecho.net/plain)
+if [ -z "$EXTERNAL_IP" ]
+then
+  echo "Failed to get external IP address."
+  exit
+fi
+
+# Check if mutt command is available, if not - install it
+if ! command -v mutt &> /dev/null; then
+    echo "Mail agent is not installed."
+    exit
+fi
 
 # Send email with the report attached
-echo "Frame logs report $(date '+%Y-%m-%d %H:%M:%S')" | mail -s "Frame Logs Report from $EXTERNAL_IP" -a "$report_zip" "$REPORTS_EMAIL"
+echo "Frame logs report $(date '+%Y-%m-%d %H:%M:%S')" | mutt -s "Frame Logs Report from $EXTERNAL_IP" -a "$report_zip" -- "$REPORTS_EMAIL"
 
 rm -rf "$TMP_LOG_DIR"
-
+rm -rf "$report_zip"

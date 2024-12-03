@@ -30,6 +30,40 @@ MEDIA_USER=media
 MEDIA_PASSWD_FILE=$HOME_DIR/user.dat
 MEDIA_DIR=/media
 
+# Email configuration
+# To get Yandex app password:
+# 1. Go to https://id.yandex.ru/security/app-passwords
+# 2. Click "Create new password"
+# 3. Select "Mail" and your device
+# 4. Add to ~/frame.cfg: YANDEX_MAIL_APP_PASSWORD=your_password
+#    (or set YANDEX_MAIL_APP_PASSWORD= to disable email notifications)
+REPORTS_EMAIL='sergey.s.alekseev@yandex.ru'
+FRAME_CONFIG_FILE=$HOME_DIR/frame.cfg
+ENABLE_EMAIL=0
+
+if [ -f "$FRAME_CONFIG_FILE" ]; then
+    # Check if password is configured (even if empty)
+    if grep -q -E "^[[:space:]]*YANDEX_MAIL_APP_PASSWORD=" "$FRAME_CONFIG_FILE" | grep -v "^#"; then
+        # Get password value
+        REPORTS_APP_PASSWD=$(grep -E "^[[:space:]]*YANDEX_MAIL_APP_PASSWORD=" "$FRAME_CONFIG_FILE" | grep -v "^#" | tail -n1 | cut -d'=' -f2)
+        if [ ! -z "$REPORTS_APP_PASSWD" ]; then
+            ENABLE_EMAIL=1
+        else
+            echo "Note: YANDEX_MAIL_APP_PASSWORD is empty in $FRAME_CONFIG_FILE, email notifications are disabled"
+        fi
+    else
+        echo "Note: YANDEX_MAIL_APP_PASSWORD not found in $FRAME_CONFIG_FILE"
+        echo "Email notifications are disabled"
+    fi
+else
+    echo "Note: Configuration file not found at $FRAME_CONFIG_FILE"
+    echo "Email notifications are disabled. To enable, please follow these steps:"
+    echo "1. Go to https://id.yandex.ru/security/app-passwords"
+    echo "2. Click 'Create new password'"
+    echo "3. Select 'Mail' and your device"
+    echo "4. Add to $FRAME_CONFIG_FILE: YANDEX_MAIL_APP_PASSWORD=your_password"
+fi
+
 PHOTO_DIR="$MEDIA_DIR/photo"
 DEMO_DIR="$MEDIA_DIR/demo"
 DEMO_ZIP="demo.zip"
@@ -57,6 +91,9 @@ VERSION_SCRIPT="get_version.sh"
 HISTORY_FILE="history.txt"
 HISTORY_WIN_FILE="history.win.txt"
 LOG_FILE="frame.log"
+
+sudo apt-get update -y
+sudo apt-get install -y zip
 
 pushd $SRC_DIR
 git_status=$(git status)
@@ -113,6 +150,55 @@ then
   sudo systemctl reload ssh
 fi
 
+# Install and configure postfix and mutt for email notifications
+if [ "$ENABLE_EMAIL" = "1" ] && ! command -v postfix &> /dev/null; then
+    echo "Installing postfix and dependencies..."
+    # Pre-configure postfix to avoid interactive prompts
+    sudo debconf-set-selections <<< "postfix postfix/mailname string $(hostname)"
+    sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Satellite system'"
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq -y postfix libsasl2-modules
+    
+    # Configure postfix for satellite mode with Yandex SMTP
+    sudo postconf -e "relayhost = [smtp.yandex.ru]:587"
+    sudo postconf -e "smtp_sasl_auth_enable = yes"
+    sudo postconf -e "smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd"
+    sudo postconf -e "smtp_sasl_security_options = noanonymous"
+    sudo postconf -e "smtp_tls_security_level = encrypt"
+    sudo postconf -e "smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt"
+    sudo postconf -e "smtp_use_tls = yes"
+    
+    # Create password file for Yandex authentication
+    echo "[smtp.yandex.ru]:587    $REPORTS_EMAIL:$REPORTS_APP_PASSWD" | sudo tee /etc/postfix/sasl_passwd > /dev/null
+    sudo chmod 600 /etc/postfix/sasl_passwd
+    sudo postmap /etc/postfix/sasl_passwd
+    
+    # Restart postfix to apply changes
+    sudo systemctl restart postfix
+fi
+
+if [ "$ENABLE_EMAIL" = "1" ] && ! command -v mutt &> /dev/null; then
+    echo "Installing mutt..."
+    sudo apt-get update -qq
+    sudo apt-get install -qq -y mutt
+fi
+
+# Configure mutt if not already configured
+if [ "$ENABLE_EMAIL" = "1" ] && [ ! -f "$HOME/.muttrc" ]; then
+    cat > "$HOME/.muttrc" << EOL
+set sendmail="/usr/sbin/sendmail -oem -oi"
+set use_from=yes
+set realname="Frame Reporter"
+set from="$REPORTS_EMAIL"
+set envelope_from=yes
+set ssl_starttls=yes
+set ssl_force_tls=yes
+set edit_headers=yes
+set charset="utf-8"
+set send_charset="utf-8"
+EOL
+    chmod 600 "$HOME/.muttrc"
+fi
+
 sudo mkdir -p $MEDIA_DIR
 PWDENT=$(getent passwd $MEDIA_USER)
 if [ -n "$PWDENT" ]; then
@@ -131,7 +217,7 @@ then
   sudo touch $MEDIA_SSH_CONF
   sudo chown $MEDIA_USER $MEDIA_SSH_CONF
   echo -e "Match User $MEDIA_USER\n  ForceCommand internal-sftp -u 0002\n" | sudo tee $MEDIA_SSH_CONF
-  sudo systemctl restart ssh
+  sudo systemctl reload ssh
 fi
 
 if [ -s $MEDIA_PASSWD_FILE ]
@@ -281,5 +367,3 @@ fi
 #ToDo: Генерировать пароль в привязке к идентификатору платы
 #ToDo: Вынести все настроечные переменные в общий файл
 #ToDo: Загружать конфиг построчным чтением файла и инициализацией переменных
-
-
