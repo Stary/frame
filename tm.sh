@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-REPORTS_EMAIL='megatestbot@gmail.com'
+REPORTS_EMAIL='sergey.s.alekseev@yandex.ru'
 report_zip="/tmp/report_$(date '+%Y%m%d_%H%M%S').zip"
 #ToDo: add send the report with zip attached to REPORTS_EMAIL
 
