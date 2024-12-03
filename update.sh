@@ -43,7 +43,7 @@ ENABLE_EMAIL=0
 
 if [ -f "$FRAME_CONFIG_FILE" ]; then
     # Check if password is configured (even if empty)
-    if grep -q -E "^[[:space:]]*YANDEX_MAIL_APP_PASSWORD=" "$FRAME_CONFIG_FILE" | grep -v "^#"; then
+    if grep -E "^[[:space:]]*YANDEX_MAIL_APP_PASSWORD=" "$FRAME_CONFIG_FILE" | grep -v "^#"; then
         # Get password value
         REPORTS_APP_PASSWD=$(grep -E "^[[:space:]]*YANDEX_MAIL_APP_PASSWORD=" "$FRAME_CONFIG_FILE" | grep -v "^#" | tail -n1 | cut -d'=' -f2)
         if [ ! -z "$REPORTS_APP_PASSWD" ]; then
@@ -94,6 +94,7 @@ LOG_FILE="frame.log"
 
 sudo apt-get update -y
 sudo apt-get install -y zip
+sudo apt autoremove -y
 
 pushd $SRC_DIR
 git_status=$(git status)
