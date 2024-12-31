@@ -269,7 +269,7 @@ process_config_file() {
         [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
         
         # Strict pattern matching for variable assignments
-        if [[ "$line" =~ ^[A-Z0-9_]+=([[:print:]]+)$ ]]; then
+        if [[ "$line" =~ ^[A-Z0-9_]+=([[:print:]]*)$ ]]; then
             # Additional validation of the value
             local var_name="${line%%=*}"
             local var_value="${line#*=}"

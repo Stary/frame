@@ -34,10 +34,10 @@ if [ -z "$DOWNLOAD_URL" ]; then
 fi
 
 TEMP_PATH="${TARGET_PATH}.tmp"
+REMOTE_MD5=$(echo "$METADATA" | grep -oP '"md5":"\K[^"]+')
 
 if [ -s "$TARGET_PATH" ]; then
     LOCAL_MD5=$(md5sum "$TARGET_PATH" | cut -d ' ' -f 1)
-    REMOTE_MD5=$(echo "$METADATA" | grep -oP '"md5":"\K[^"]+')
     if [ "X$REMOTE_MD5" == "X$LOCAL_MD5" ]; then
         echo "File $FILENAME has already been downloaded, as its md5 matches the remote one, no need to download it again."
         exit 0
