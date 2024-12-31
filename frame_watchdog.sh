@@ -265,11 +265,11 @@ process_config_file() {
     
     # Process each line with strict validation
     while IFS= read -r line || [ -n "$line" ]; do
-        # Skip empty lines and comments
-        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+        # Skip empty lines and comments and lines ending with =
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# || "$line" =~ =$ ]] && continue
         
         # Strict pattern matching for variable assignments
-        if [[ "$line" =~ ^[A-Z0-9_]+=([[:print:]]*)$ ]]; then
+        if [[ "$line" =~ ^[A-Z0-9_]+=([[:print:]]+)$ ]]; then
             # Additional validation of the value
             local var_name="${line%%=*}"
             local var_value="${line#*=}"
@@ -452,7 +452,7 @@ WIFI_PASSWORD="$WIFI_PASSWORD"
 #Пароль приложения Yandex Mail для отправки логов
 #Сформировать пароль можно в интерфейсе настроек аккаунта Yandex по ссылке
 #https://id.yandex.ru/security/app-passwords
-YANDEX_MAIL_APP_PASSWORD=$YANDEX_MAIL_APP_PASSWORD
+YANDEX_MAIL_APP_PASSWORD="$YANDEX_MAIL_APP_PASSWORD"
 
 #URL к публично-доступной папке на Яндекс-Диске. Если ссылка задана и активна, содержимое данной папки Я.Диска
 #будет регулярно синхронизироваться в локальную папку с фотографиями
@@ -460,7 +460,7 @@ YANDEX_MAIL_APP_PASSWORD=$YANDEX_MAIL_APP_PASSWORD
 #YANDEX_DISK_PUBLIC_URL=https://disk.yandex.ru/d/yg2o_OtadJovFw
 #В качестве примера использована ссылка на существующую папку на Яндекс.Диске,
 #содержащую подборку красивых фотографий природы
-YANDEX_DISK_PUBLIC_URL=$YANDEX_DISK_PUBLIC_URL
+YANDEX_DISK_PUBLIC_URL="$YANDEX_DISK_PUBLIC_URL"
 
 EOM
 
