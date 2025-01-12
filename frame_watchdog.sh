@@ -22,7 +22,7 @@ FONT=FreeMono/24
 GEO_MAX_LEN=60
 TIMEZONE=Moscow
 SCREEN_ORIENTATION=auto
-SCHEDULE=05:00-CLOCK,07:00-FRAME,09:00-DESKTOP,18:00-FRAME,22:00-CLOCK,23:30-OFF
+SCHEDULE=06:00-CLOCK,08:00-FRAME,22:00-CLOCK,23:30-OFF
 UPDATE=no
 REBOOT=no
 HIDE_PANEL=no
@@ -50,7 +50,7 @@ IMAGES_DIR=''
 USER=$(whoami)
 IMAGE_EXT_RE='(img|png|jpg|jpeg|heic)'
 
-RESTART_SLIDESHOW_AFTER=120
+RESTART_SLIDESHOW_AFTER=0
 
 WIFI_DEV='wlan0'
 #WIFI_MAC=$((16#$(ifconfig $WIFI_DEV 2>/dev/null | awk '/ether/ {print $2}' | cut -d ':' -f 5-6 | sed 's/://g' | tr a-z A-Z)))
@@ -403,6 +403,7 @@ SEND_LOGS=no
 DELAY=$DELAY
 
 #Интервал до перезапуска слайдшоу в минутах, полезно для переключения на другой день в истории
+#при значении 0 слайдшоу не перезапускается
 RESTART_SLIDESHOW_AFTER=$RESTART_SLIDESHOW_AFTER
 
 #Порядок смены слайдов. yes - случайный, no - сортировка по имени файла, но со случайным начальным файлом
@@ -425,7 +426,7 @@ GEO_MAX_LEN=$GEO_MAX_LEN
 #Таймзона - можно указать название города (Kaliningrad,Moscow) или часовой пояс (GMT+3)
 TIMEZONE=$TIMEZONE
 
-#Ориентация экрана - normal (соответствует аппаратному положению матрицы), left, right, auto (приведение к горизонтальному)
+#Ориентация экрана - normal (соответствует аппаратному положению матрицы), left, right, inverted
 SCREEN_ORIENTATION=$SCREEN_ORIENTATION
 
 #Конфигурация часов
@@ -515,6 +516,34 @@ then
 fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
+
+############################################################################################
+
+# 1. Check if SCREEN_ORIENTATION is valid (non-fatal)
+valid_orientation=false
+case "$SCREEN_ORIENTATION" in
+  normal|left|right|inverted)
+    valid_orientation=true
+    ;;
+esac
+
+# 2. Get current orientation (only if SCREEN_ORIENTATION is valid)
+if [[ "$valid_orientation" == true ]]; then
+  current_orientation=$(xrandr | grep " connected" | sed -E 's/.* (normal|left|right|inverted).*$/\1/')
+
+  # 3. Compare and apply if needed (only if SCREEN_ORIENTATION is valid)
+  if [[ "$current_orientation" != "$SCREEN_ORIENTATION" ]]; then
+    echo "Changing orientation from '$current_orientation' to '$SCREEN_ORIENTATION'..."
+    xrandr -o "$SCREEN_ORIENTATION"
+    if [[ $? -eq 0 ]]; then
+      echo "Orientation set successfully."
+    else
+      echo "Error setting orientation."
+    fi
+  fi
+else
+  echo "Warning: Invalid SCREEN_ORIENTATION: '$SCREEN_ORIENTATION'. Skipping orientation change."
+fi
 
 ############################################################################################
 
