@@ -427,7 +427,8 @@ GEO_MAX_LEN=$GEO_MAX_LEN
 #Таймзона - можно указать название города (Kaliningrad,Moscow) или часовой пояс (GMT+3)
 TIMEZONE=$TIMEZONE
 
-#Ориентация экрана - normal (соответствует аппаратному положению матрицы), left, right, inverted
+#Ориентация экрана - normal (соответствует аппаратному положению матрицы), 
+#left, right, inverted, auto (автоматическое определение положения матрицы)
 SCREEN_ORIENTATION=$SCREEN_ORIENTATION
 
 #Конфигурация часов
@@ -526,7 +527,7 @@ export DISPLAY=$SLIDESHOW_DISPLAY
 # 1. Check if SCREEN_ORIENTATION is valid (non-fatal)
 valid_orientation=false
 case "$SCREEN_ORIENTATION" in
-  normal|left|right|inverted)
+  normal|left|right|inverted|auto)
     valid_orientation=true
     ;;
 esac
@@ -541,6 +542,27 @@ if [[ "$valid_orientation" == true ]]; then
     *)
       current_orientation='normal'
   esac
+
+  if [ "$SCREEN_ORIENTATION" == "auto" ]; then
+    # Auto-detect orientation based on screen size
+
+    size=$(xrandr | grep " connected")
+
+    # Extract dimensions using regular expression
+    if [[ "$size" =~ ([0-9]+)mm\ x\ ([0-9]+)mm$ ]]; then
+      width="${BASH_REMATCH[1]}"
+      height="${BASH_REMATCH[2]}"
+
+      # Compare dimensions
+      if (( width > height )); then
+        SCREEN_ORIENTATION="right"
+      else
+        SCREEN_ORIENTATION="normal"
+      fi
+    else
+      echo "String does not match expected format."
+    fi
+  fi
 
   # 3. Compare and apply if needed (only if SCREEN_ORIENTATION is valid)
   if [[ "$current_orientation" != "$SCREEN_ORIENTATION" ]]; then
