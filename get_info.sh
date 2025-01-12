@@ -9,6 +9,8 @@ ts=''
 
 BIN_DIR=$HOME/bin
 USB_DIR=/media/usb
+LOCAL_DIR=/media/photo
+CONFIG=frame.cfg
 MEDIA_USER=media
 MEDIA_PASSWD=$(cat ~/user.dat)
 IP=$(ifconfig | grep inet | grep -v inet6 | grep -v 127.0.0.1 | sed 's/.*inet *//' | sed 's/ *netmask.*//')
@@ -33,7 +35,7 @@ then
     echo "Для стабильной работы флэшку необходимо предварительно отформатировать в FAT32"
     echo "на компьютере под управлением операционной системы Windows 10/11."
     echo ""
-    echo "Настройки слайдшоу и часов будут сохранены на флэшке в файле frame.cfg,"
+    echo "Настройки слайдшоу и часов будут сохранены на флэшке в файле $CONFIG,"
     echo "их можно редактировать как по сети, так и подключив временно флэшку к компьютеру."
     echo ""
   fi
