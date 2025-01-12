@@ -299,6 +299,7 @@ process_config_file() {
 }
 
 [ -s "$HOME/$CONFIG" ] && process_config_file "$HOME/$CONFIG" "HOME"
+[ -s "$LOCAL_DIR/$CONFIG" ] && process_config_file "$LOCAL_DIR/$CONFIG" "LOCAL"
 [ -s "$USB_DIR/$CONFIG" ] && process_config_file "$USB_DIR/$CONFIG" "USB"
 
 rm -rf "$SECURE_TMP_DIR"
@@ -485,6 +486,7 @@ then
   pkill conky
   sleep 3
   echo "$config" > "$HOME/$CONFIG"
+  echo "$config" > "$LOCAL_DIR/$CONFIG"
   echo "$c1" > "$HOME/$CONFIG.md5"
   cat "$CONKY_CONF_TEMPLATE" | \
   sed "s/_CLOCK_COLOR_/$CLOCK_COLOR/" |\
