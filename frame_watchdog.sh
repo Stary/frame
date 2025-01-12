@@ -35,6 +35,7 @@ CLOCK_VOFFSET=320
 USB_DIR=/media/usb
 LOCAL_DIR=/media/photo
 DEMO_DIR=/media/demo
+MEDIA_USER=media
 
 BIN_DIR=$HOME/bin
 LOG_DIR=/var/log/frame
@@ -486,8 +487,13 @@ then
   pkill -f feh
   pkill conky
   sleep 3
+
   echo "$config" > "$HOME/$CONFIG"
   echo "$c1" > "$HOME/$CONFIG.md5"
+
+  sudo rsync -aq $HOME/$CONFIG $LOCAL_DIR/$CONFIG
+  sudo chown $MEDIA_USER:$MEDIA_USER $LOCAL_DIR/$CONFIG
+
   cat "$CONKY_CONF_TEMPLATE" | \
   sed "s/_CLOCK_COLOR_/$CLOCK_COLOR/" |\
   sed "s/_CLOCK_SIZE_/$CLOCK_SIZE/" |\
@@ -495,8 +501,6 @@ then
   sed "s/_CLOCK_VOFFSET_/$CLOCK_VOFFSET/" > "$CONKY_CONF"
 fi
 
-sudo rsync -av $HOME/$CONFIG $LOCAL_DIR/$CONFIG
-sudo chown $MEDIA_USER:$MEDIA_USER $LOCAL_DIR/$CONFIG
 
 if [ "$USB_READY" -gt "0" ]
 then
