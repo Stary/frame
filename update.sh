@@ -140,6 +140,13 @@ then
   chmod 600 $SSH_KEYS
 fi
 
+for d in $CONKY_CONF_DIR $BIN_DIR $LOG_DIR
+do
+  echo $d
+  sudo mkdir -p $d
+  sudo chown -R $USER $d
+done
+
 chmod 700 $HOME
 chmod 700 $LOG_DIR
 
@@ -238,7 +245,7 @@ then
   sudo chown -R $USER:$MEDIA_USER "$DEMO_DIR"
   sudo chmod 775 "$DEMO_DIR"
   #wget -O $TMP_DEMO_ZIP "$STATIC_BASE_URL/$DEMO_ZIP"
-  $YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$DEMO_ZIP" "$TMP_DEMO_ZIP"
+  $SRC_DIR/$YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$DEMO_ZIP" "$TMP_DEMO_ZIP"
   if [ -s "$TMP_DEMO_ZIP" ]
   then
     unzip -d "$DEMO_DIR" $TMP_DEMO_ZIP
@@ -255,13 +262,6 @@ then
   sudo chown -R $MEDIA_USER:$MEDIA_USER "$PHOTO_DIR"
   sudo chmod 775 "$PHOTO_DIR"
 fi
-
-for d in $CONKY_CONF_DIR $BIN_DIR $LOG_DIR
-do
-  echo $d
-  sudo mkdir -p $d
-  sudo chown -R $USER $d
-done
 
 if [ $SRC_DIR != $BIN_DIR ];
 then
@@ -306,7 +306,7 @@ else
 fi
 
 local_logo_file="$HOME/watermark.png"
-$YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$remote_logo_file" "$local_logo_file"
+$BIN_DIR/$YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$remote_logo_file" "$local_logo_file"
 if [ -s "$local_logo_file" ]
 then
   local_logo_md5=$(md5sum "$local_logo_file" | cut -d ' ' -f 1)
@@ -326,7 +326,7 @@ fi
 remote_blackbg_file='blackbg.png'
 local_blackbg_file="$HOME/blackbg.png"
 
-$YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$remote_blackbg_file" "$local_blackbg_file"
+$BIN_DIR/$YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$remote_blackbg_file" "$local_blackbg_file"
 
 if [ -s "$local_blackbg_file" ]
 then
