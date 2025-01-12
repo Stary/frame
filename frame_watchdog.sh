@@ -486,9 +486,9 @@ then
   pkill conky
   sleep 3
   echo "$config" > "$HOME/$CONFIG"
+  echo "$c1" > "$HOME/$CONFIG.md5"
   sudo rsync -av $HOME/$CONFIG $LOCAL_DIR/$CONFIG
   sudo chown $MEDIA_USER:$MEDIA_USER $LOCAL_DIR/$CONFIG
-  echo "$c1" > "$HOME/$CONFIG.md5"
   cat "$CONKY_CONF_TEMPLATE" | \
   sed "s/_CLOCK_COLOR_/$CLOCK_COLOR/" |\
   sed "s/_CLOCK_SIZE_/$CLOCK_SIZE/" |\
