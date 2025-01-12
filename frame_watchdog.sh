@@ -529,7 +529,14 @@ esac
 
 # 2. Get current orientation (only if SCREEN_ORIENTATION is valid)
 if [[ "$valid_orientation" == true ]]; then
-  current_orientation=$(xrandr | grep " connected" | sed -E 's/.* (normal|left|right|inverted).*$/\1/')
+  current_orientation=$(xrandr | grep " connected" | sed -E 's/^.* (normal|left|right|inverted)\s+\(.*$/\1/')
+
+  case "$current_orientation" in
+    normal|left|right|inverted)
+    ;;
+    *)
+      current_orientation='normal'
+  esac
 
   # 3. Compare and apply if needed (only if SCREEN_ORIENTATION is valid)
   if [[ "$current_orientation" != "$SCREEN_ORIENTATION" ]]; then
