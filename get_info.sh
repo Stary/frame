@@ -42,7 +42,6 @@ then
   then
     echo "Для подключения рамки к сети создайте на флэшке файл wifi.txt с двумя строками:"
     echo "в первой строке укажите название сети WiFi (стандарта WPA2), во второй - пароль."
-    echo "Поддержка стандарта безопасности WPA3 будет добавлена в следующих версиях."
   else
     echo "Протокол: SFTP"
     echo "Сеть: $WIFI_SSID"
@@ -50,10 +49,13 @@ then
     echo "Порт: 22"
     echo "Пользователь: $MEDIA_USER"
     echo "Пароль: $MEDIA_PASSWD"
-    echo "Папка для фотографий на MicroSD: /media/photo"
+    echo "Папка для фотографий на MicroSD: $LOCAL_DIR"
     if [ "X$USB_READY" == "X1" ]
     then
-      echo "Папка с фотографиями на флэшке: /media/usb"
+      echo "Папка с фотографиями на флэшке: $USB_DIR"
+      echo "Конфигурационный файл: $USB_DIR/$CONFIG"
+    else
+      echo "Конфигурационный файл: $LOCAL_DIR/$CONFIG"
     fi
   fi
   exit
