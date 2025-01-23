@@ -22,7 +22,7 @@ FONT=FreeMono/24
 GEO_MAX_LEN=60
 TIMEZONE=Moscow
 SCREEN_ORIENTATION=auto
-SCHEDULE=06:00-CLOCK,08:00-FRAME,22:00-CLOCK,23:30-OFF
+SCHEDULE=00:00-CLOCK,08:00-FRAME
 UPDATE=no
 REBOOT=no
 HIDE_PANEL=no
@@ -550,15 +550,15 @@ if [[ "$valid_orientation" == true ]]; then
   if [ "$SCREEN_ORIENTATION" == "auto" ]; then
     # Auto-detect orientation based on screen size
 
-    size=$(xrandr | grep " connected")
+    size=$(xrandr | grep '*' | awk '{print $1}')
 
     # Extract dimensions using regular expression
-    if [[ "$size" =~ ([0-9]+)mm\ x\ ([0-9]+)mm$ ]]; then
+    if [[ "$size" =~ ([0-9]+)x([0-9]+)$ ]]; then
       width="${BASH_REMATCH[1]}"
       height="${BASH_REMATCH[2]}"
 
       # Compare dimensions
-      if (( width > height )); then
+      if (( width < height )); then
         SCREEN_ORIENTATION="right"
       else
         SCREEN_ORIENTATION="normal"
