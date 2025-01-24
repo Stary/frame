@@ -305,6 +305,55 @@ process_config_file() {
 
 rm -rf "$SECURE_TMP_DIR"
 
+##################################################################################################
+# Loading wifi connection details if any
+
+if [ "$USB_READY" -gt "0" ]
+then
+  while IFS= read -r -d '' file
+  do
+    echo "Обнаружен файл с данными для подключения к сети WiFi: $file"
+    WIFI_SSID2=""
+    WIFI_PASSWORD2=""
+    while IFS= read -r line
+    do
+      if [ "X$WIFI_SSID2" == 'X' ]; then
+        WIFI_SSID2=$line
+      else
+        if [ "X$WIFI_PASSWORD2" == 'X' ]; then
+          WIFI_PASSWORD2=$line
+          if [ "X$WIFI_SSID2" != "X$WIFI_SSID" ] || [ "X$WIFI_PASSWORD2" != "X$WIFI_PASSWORD" ]
+          then
+            wifi_net_cnt=$(sudo nmcli --fields SSID d wifi| grep -c "$WIFI_SSID2")
+            if [ "$wifi_net_cnt" -gt "0" ]
+            then
+              echo "Подключаемся к сети $WIFI_SSID2"
+              sudo nmcli device wifi connect "$WIFI_SSID2" password "$WIFI_PASSWORD2" ifname $WIFI_DEV
+              connection_status=$(internet)
+              echo "Статус подключения: $connection_status"
+              connected=$(sudo nmcli --fields IN-USE,SSID d wifi | grep -c -E -e "^\*\s+$WIFI_SSID2\b")
+              if [ "$connected" -gt "0" ]
+              then
+                echo "Успешно подключились к сети $WIFI_SSID2"
+                WIFI_SSID=$WIFI_SSID2
+                WIFI_PASSWORD=$WIFI_PASSWORD2
+              else
+                echo "Не удалось подключиться к сети $WIFI_SSID2"
+                sudo nmcli con del "$WIFI_SSID2"
+              fi
+              sudo mv -f "$file" "$file.backup"
+            else
+              echo "Сеть $WIFI_SSID2 не нашлась в списке подключений"
+            fi
+          else
+            echo "Параметры сети в файле $file совпадают с уже известными"
+          fi
+        fi
+      fi
+    done < <(cat $file | dos2unix | grep -v -e "^$" | head -2)
+  done <  <(find $USB_DIR -type f -size -256 -regextype egrep -iregex '.*/wifi.*\.(cfg|txt)' -print0)
+fi
+
 ##########################################################################################################
 #Проверка статуса подключения, многоуровневая логика восстановления подключения
 

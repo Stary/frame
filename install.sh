@@ -14,11 +14,13 @@ SRC_DIR="$(cd $(dirname $(realpath "$0")); pwd -P)"
 SUDO_FILE="/etc/sudoers.d/$USER"
 RELEASE=$(lsb_release -c | sed 's/.*\:\s*//')
 
+VERSION_SCRIPT='get_version.sh'
 
 echo "+============================+"
 echo "|   Advanced Photo Frame     |"
 echo "+============================+"
 
+$SRC_DIR/$VERSION_SCRIPT
 
 if [ ! -s "$SUDO_FILE" ]
 then
