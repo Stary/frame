@@ -708,6 +708,7 @@ else
   set_panel on
 fi
 
+pkill -f xfce4-display-settings
 
 case "$target_mode" in
 FRAME)
