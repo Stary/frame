@@ -331,7 +331,8 @@ then
               sudo nmcli device wifi connect "$WIFI_SSID2" password "$WIFI_PASSWORD2" ifname $WIFI_DEV
               connection_status=$(internet)
               echo "Статус подключения: $connection_status"
-              connected=$(sudo nmcli --fields IN-USE,SSID d wifi | grep -c -E -e "^\*\s+$WIFI_SSID2\b")
+              ESCAPED_WIFI_SSID2=$(printf '%s\n' "$WIFI_SSID2" | sed 's/[.[\()*?^$+{}|\\]/\\&/g')
+              connected=$(sudo nmcli --fields IN-USE,SSID d wifi | grep -c -E -e "^\*\s+$ESCAPED_WIFI_SSID2\b")
               if [ "$connected" -gt "0" ]
               then
                 echo "Успешно подключились к сети $WIFI_SSID2"
