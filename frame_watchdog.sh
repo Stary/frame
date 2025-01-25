@@ -332,7 +332,7 @@ then
               connection_status=$(internet)
               echo "Статус подключения: $connection_status"
               ESCAPED_WIFI_SSID2=$(printf '%s\n' "$WIFI_SSID2" | sed 's/[.[\()*?^$+{}|\\]/\\&/g')
-              connected=$(sudo nmcli --fields IN-USE,SSID d wifi | grep -c -E -e "^\*\s+$ESCAPED_WIFI_SSID2\b")
+              connected=$(sudo nmcli --fields IN-USE,SSID d wifi | grep -c -E -e "^\*\s+$ESCAPED_WIFI_SSID2")
               if [ "$connected" -gt "0" ]
               then
                 echo "Успешно подключились к сети $WIFI_SSID2"
