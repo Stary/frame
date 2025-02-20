@@ -12,7 +12,7 @@ USB_DIR=/media/usb
 LOCAL_DIR=/media/photo
 CONFIG=frame.cfg
 MEDIA_USER=media
-MEDIA_PASSWD=$(cat ~/user.dat)
+MEDIA_PASSWD=$(cat ~/user.dat 2>/dev/null)
 IP=$(ifconfig | grep inet | grep -v inet6 | grep -v 127.0.0.1 | sed 's/.*inet *//' | sed 's/ *netmask.*//')
 WIFI_SSID=$(sudo nmcli --fields CONNECTION,STATE,DEVICE  d | grep -v -i disconnected | grep -i connected | grep wlan | cut -d ' ' -f 1)
 USB_READY=0
@@ -45,12 +45,15 @@ then
     echo "Для подключения рамки к сети создайте на флэшке файл wifi.txt с двумя строками:"
     echo "в первой строке укажите название сети WiFi (стандарта WPA2), во второй - пароль."
   else
-    echo "Протокол: SFTP"
-    echo "Сеть: $WIFI_SSID"
-    echo "IP: $IP"
-    echo "Порт: 22"
-    echo "Пользователь: $MEDIA_USER"
-    echo "Пароль: $MEDIA_PASSWD"
+    if [ -n "$MEDIA_PASSWD" ]
+    then
+      echo "Протокол: SFTP"
+      echo "Сеть: $WIFI_SSID"
+      echo "IP: $IP"
+      echo "Порт: 22"
+      echo "Пользователь: $MEDIA_USER"
+      echo "Пароль: $MEDIA_PASSWD"
+    fi
     echo "Папка для фотографий на MicroSD: $LOCAL_DIR"
     if [ "X$USB_READY" == "X1" ]
     then

@@ -44,8 +44,7 @@ YANDEX_DISK_SYNC_SCRIPT='yd.py'
 CONKY_CONF=$HOME/.config/conky/conky.conf
 CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
 
-FORCE_UPDATE_FLAG_FILE=$HOME/update.dat
-
+MEDIA_PASSWD_FILE=$HOME/user.dat
 
 YANDEX_DISK_PUBLIC_URL=''
 
@@ -577,11 +576,10 @@ then
   sudo reboot
 fi
 
-if [ -f "$FORCE_UPDATE_FLAG_FILE" ]; then
-  echo "Обнаружен флаг принудительного обновления"
+if [ ! -f "$MEDIA_PASSWD_FILE" ]; then
+  echo "Не обнаружен файл с паролем пользователя media, это признак необходимости инициализации. "
   UPDATE='yes'
 fi
-
 
 export DISPLAY=$SLIDESHOW_DISPLAY
 
@@ -657,9 +655,15 @@ else
   if [ "X$UPDATE" == "Xyes" ]
   then
     echo "Запрошено автоматическое обновление"
-    nohup sh -c 'cd $HOME/frame && sleep 3 && git pull && ./update.sh' >> $LOG_DIR/update.log 2>&1 &
-    echo "Управление передается скрипту обновления, скрипт $0 завершается"
-    exit
+    st=$(get_connection_status)
+    if [ "$st" -eq "$NET_OK" ]
+    then
+      nohup sh -c 'cd $HOME/frame && sleep 3 && git pull && ./update.sh' >> $LOG_DIR/update.log 2>&1 &
+      echo "Управление передается скрипту обновления, скрипт $0 завершается"
+      exit
+    else
+      echo "Для обновления требуется стабильное подключение к Интернету, обновление пока пропускаем"
+    fi
   fi
 
   TZFILE_NEW=$(find /usr/share/zoneinfo -type f | grep -i "$TIMEZONE" | sort | head -1)
