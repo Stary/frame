@@ -39,6 +39,7 @@ MEDIA_DIR=/media
 #    (or set YANDEX_MAIL_APP_PASSWORD= to disable email notifications)
 REPORTS_EMAIL='sergey.s.alekseev@yandex.ru'
 FRAME_CONFIG_FILE=$HOME_DIR/frame.cfg
+FORCE_UPDATE_FLAG_FILE=$HOME/update.dat
 ENABLE_EMAIL=0
 
 if [ -f "$FRAME_CONFIG_FILE" ]; then
@@ -344,6 +345,8 @@ fi
 #(crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT; echo "@reboot $SRC_DIR/$UPDATE_SCRIPT norestart >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
 (crontab -l 2>/dev/null| grep -v $UPDATE_SCRIPT) | crontab -
 (crontab -l 2>/dev/null| grep -v $MAIN_SCRIPT; echo "* * * * * $BIN_DIR/$MAIN_SCRIPT >> $LOG_DIR/$LOG_FILE 2>&1") | crontab -
+
+rm -f $FORCE_UPDATE_FLAG_FILE
 
 if [ "X$OPTION" == "Xnorestart" ]
 then

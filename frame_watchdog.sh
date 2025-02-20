@@ -44,6 +44,9 @@ YANDEX_DISK_SYNC_SCRIPT='yd.py'
 CONKY_CONF=$HOME/.config/conky/conky.conf
 CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
 
+FORCE_UPDATE_FLAG_FILE=$HOME/update.dat
+
+
 YANDEX_DISK_PUBLIC_URL=''
 
 DIRS="$USB_DIR $LOCAL_DIR $HOME/photo $DEMO_DIR $HOME/demo"
@@ -574,6 +577,12 @@ then
   sudo reboot
 fi
 
+if [ -f "$FORCE_UPDATE_FLAG_FILE" ]; then
+  echo "Обнаружен флаг принудительного обновления"
+  UPDATE='yes'
+fi
+
+
 export DISPLAY=$SLIDESHOW_DISPLAY
 
 ############################################################################################
@@ -756,7 +765,6 @@ FRAME)
           find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin +$RECENT_MINUTES_FIRST | grep -v '/\.' | grep -v -i 'trash' | sort > "$OLDER_LIST"
 
           unlink "$PLAY_LIST" 2>/dev/null
-
           if [ -s "$RECENT_LIST" ]
           then
             if [ "X$RANDOM_ORDER" == "Xyes" ]
