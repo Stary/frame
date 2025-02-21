@@ -70,6 +70,8 @@ DEMO_ZIP="demo.zip"
 TMP_DEMO_ZIP="/tmp/$DEMO_ZIP"
 CONKY_CONF_DIR="$HOME_DIR/.config/conky"
 BIN_DIR="$HOME_DIR/bin"
+SYSTEM_BIN_DIR="/usr/local/bin"
+SYSTEMD_DIR="/etc/systemd/system"
 LOG_DIR="/var/log/frame"
 SSH_DIR=$HOME/.ssh
 USB_DIR="/media/usb"
@@ -92,6 +94,9 @@ VERSION_SCRIPT="get_version.sh"
 HISTORY_FILE="history.txt"
 HISTORY_WIN_FILE="history.win.txt"
 LOG_FILE="frame.log"
+RESIZE_ROOT_FS_SCRIPT="resize_root.sh"
+RESIZE_ROOT_FS_SERVICE="resizefs.service"
+
 
 sudo apt-get update -y
 sudo apt-get install -y zip
@@ -263,6 +268,10 @@ then
   sudo chmod 775 "$PHOTO_DIR"
 fi
 
+sudo rsync -av $SRC_DIR/$RESIZE_ROOT_FS_SCRIPT $SYSTEM_BIN_DIR
+sudo rsync -av $SRC_DIR/$RESIZE_ROOT_FS_SERVICE $SYSTEMD_DIR/$RESIZE_ROOT_FS_SERVICE
+sudo systemctl enable $RESIZE_ROOT_FS_SERVICE
+
 if [ $SRC_DIR != $BIN_DIR ];
 then
   rsync -av $SRC_DIR/$MAIN_SCRIPT $BIN_DIR
@@ -367,6 +376,4 @@ then
   $BIN_DIR/$MAIN_SCRIPT
 fi
 
-#ToDo: Генерировать пароль в привязке к идентификатору платы
 #ToDo: Вынести все настроечные переменные в общий файл
-#ToDo: Загружать конфиг построчным чтением файла и инициализацией переменных
