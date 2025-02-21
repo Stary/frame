@@ -270,7 +270,6 @@ fi
 
 sudo rsync -av $SRC_DIR/$RESIZE_ROOT_FS_SCRIPT $SYSTEM_BIN_DIR
 sudo rsync -av $SRC_DIR/$RESIZE_ROOT_FS_SERVICE $SYSTEMD_DIR/$RESIZE_ROOT_FS_SERVICE
-sudo systemctl enable $RESIZE_ROOT_FS_SERVICE
 
 if [ $SRC_DIR != $BIN_DIR ];
 then
@@ -357,6 +356,18 @@ fi
 if [ "X$OPTION" == "Xnorestart" ]
 then
   exit
+fi
+
+PARTITION_DEVICE=$(findmnt -n -o SOURCE / | sed -r 's/( )+//g')
+DISK_DEVICE="/dev/$(lsblk -no pkname "$PARTITION_DEVICE" | sed -r 's/( )+//g')"
+UNALLOCATED=$(($(lsblk -bno SIZE $DISK_DEVICE | sort -r | head -1) - $(lsblk -bno SIZE $PARTITION_DEVICE | sort -r | head -1)))
+if (( UNALLOCATED > 1000000 ))
+then
+  echo "На диске $DISK_DEVICE обнаружено нераспределенное пространство."
+  echo "Раздел $PARTITION_DEVICE, содержащий корневую файловую систему,"
+  echo "будет увеличен на $UNALLOCATED байт, требуется перезагрузка."
+  sudo systemctl enable $RESIZE_ROOT_FS_SERVICE
+  sudo touch /var/run/reboot-required
 fi
 
 if [ -f /var/run/reboot-required ]; then
