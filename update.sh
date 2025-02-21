@@ -361,7 +361,7 @@ fi
 PARTITION_DEVICE=$(findmnt -n -o SOURCE / | sed -r 's/( )+//g')
 DISK_DEVICE="/dev/$(lsblk -no pkname "$PARTITION_DEVICE" | sed -r 's/( )+//g')"
 UNALLOCATED=$(($(lsblk -bno SIZE $DISK_DEVICE | sort -r | head -1) - $(lsblk -bno SIZE $PARTITION_DEVICE | sort -r | head -1)))
-if (( UNALLOCATED > 1000000 ))
+if (( UNALLOCATED > 1000000000 ))
 then
   echo "На диске $DISK_DEVICE обнаружено нераспределенное пространство."
   echo "Раздел $PARTITION_DEVICE, содержащий корневую файловую систему,"
