@@ -1,0 +1,7 @@
+#!/bin/sh
+. /usr/share/initramfs-tools/hook-functions
+copy_exec /sbin/parted
+copy_exec /sbin/resize2fs
+copy_exec /sbin/blkid
+copy_exec /sbin/e2fsck
+copy_exec /sbin/dumpe2fs

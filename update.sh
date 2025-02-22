@@ -70,13 +70,15 @@ DEMO_ZIP="demo.zip"
 TMP_DEMO_ZIP="/tmp/$DEMO_ZIP"
 CONKY_CONF_DIR="$HOME_DIR/.config/conky"
 BIN_DIR="$HOME_DIR/bin"
-SYSTEM_BIN_DIR="/usr/local/bin"
-SYSTEMD_DIR="/etc/systemd/system"
 LOG_DIR="/var/log/frame"
 SSH_DIR=$HOME/.ssh
 USB_DIR="/media/usb"
 SSH_KEYS=$SSH_DIR/authorized_keys
-STATIC_BASE_URL="https://quietharbor.net/static/"
+
+INITRAMFS_SCRIPTS_DIR="/etc/initramfs-tools/scripts/local-premount"
+INITRAMFS_HOOKS_DIR="/etc/initramfs-tools/hooks"
+INITRAMFS_RESIZE_SCRIPT="resize-fs.sh"
+INITRAMFS_TOOLS_SCRIPT="resize-tools"
 
 CONKY_CONF_TEMPLATE="conky.conf.template"
 CONKY_FONT="UbuntuThin.ttf"
@@ -94,8 +96,6 @@ VERSION_SCRIPT="get_version.sh"
 HISTORY_FILE="history.txt"
 HISTORY_WIN_FILE="history.win.txt"
 LOG_FILE="frame.log"
-RESIZE_ROOT_FS_SCRIPT="resize_root.sh"
-RESIZE_ROOT_FS_SERVICE="resizefs.service"
 
 
 sudo apt-get update -y
@@ -249,7 +249,6 @@ then
   sudo mkdir -p "$DEMO_DIR"
   sudo chown -R $USER:$MEDIA_USER "$DEMO_DIR"
   sudo chmod 775 "$DEMO_DIR"
-  #wget -O $TMP_DEMO_ZIP "$STATIC_BASE_URL/$DEMO_ZIP"
   $SRC_DIR/$YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$DEMO_ZIP" "$TMP_DEMO_ZIP"
   if [ -s "$TMP_DEMO_ZIP" ]
   then
@@ -267,9 +266,6 @@ then
   sudo chown -R $MEDIA_USER:$MEDIA_USER "$PHOTO_DIR"
   sudo chmod 775 "$PHOTO_DIR"
 fi
-
-sudo rsync -av $SRC_DIR/$RESIZE_ROOT_FS_SCRIPT $SYSTEM_BIN_DIR
-sudo rsync -av $SRC_DIR/$RESIZE_ROOT_FS_SERVICE $SYSTEMD_DIR/$RESIZE_ROOT_FS_SERVICE
 
 if [ $SRC_DIR != $BIN_DIR ];
 then
@@ -366,8 +362,9 @@ then
   echo "На диске $DISK_DEVICE обнаружено нераспределенное пространство."
   echo "Раздел $PARTITION_DEVICE, содержащий корневую файловую систему,"
   echo "будет увеличен на $UNALLOCATED байт, требуется перезагрузка."
-  sudo systemctl enable $RESIZE_ROOT_FS_SERVICE
-  sudo touch /var/run/reboot-required
+  sudo rsync -av $BIN_DIR/$INITRAMFS_RESIZE_SCRIPT $INITRAMFS_SCRIPTS_DIR
+  sudo rsync -av $BIN_DIR/$INITRAMFS_TOOLS_SCRIPT $INITRAMFS_INITRAMFS_HOOKS_DIR
+  sudo update-initramfs -u
 fi
 
 if [ -f /var/run/reboot-required ]; then
@@ -379,7 +376,7 @@ fi
 changed_files=$(find "$BIN_DIR" -mtime -1 -type f | grep -v .git | grep -v pycache | wc -l)
 if [ "$changed_files" -ne 0 ] || [ "X$OPTION" == "Xforce" ]
 then
-  echo "$changed_files file(s) were updated, so restarting the service"
+  echo "Изменено файлов: $changed_files, перезапустим сервис"
   pkill conky
   pkill unclutter
   pkill -f feh

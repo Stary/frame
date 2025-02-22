@@ -27,6 +27,8 @@ mount $PARTITION_DEVICE $MOUNT_POINT
 rm -f -v $MOUNT_POINT/var/log/frame/*
 rm -f -v $MOUNT_POINT/var/log/resize*
 rm -f -v $MOUNT_POINT/home/orangepi/user.dat
+rm -f -v $MOUNT_POINT/etc/systemd/system/resizefs.service
+rm -f -v $MOUNT_POINT/usr/local/bin/resize_root.sh
 
 umount $MOUNT_POINT
 
@@ -40,4 +42,4 @@ resize2fs $PARTITION_DEVICE
 
 e2fsck -f $PARTITION_DEVICE
 
-dd if=$DISK_DEVICE bs=512 count=11 status=progress | gzip > frame.$TS.gz
+#dd if=$DISK_DEVICE bs=512 count=11 status=progress | gzip > frame.$TS.gz
