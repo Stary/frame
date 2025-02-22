@@ -296,6 +296,10 @@ fi
 rsync -av $SRC_DIR/$CONKY_CONF_TEMPLATE $CONKY_CONF_DIR
 rsync -av $SRC_DIR/$CONKY_FONT $CONKY_CONF_DIR
 
+sudo rsync -av $BIN_DIR/$INITRAMFS_RESIZE_SCRIPT $INITRAMFS_SCRIPTS_DIR
+sudo rsync -av $BIN_DIR/$INITRAMFS_TOOLS_SCRIPT $INITRAMFS_INITRAMFS_HOOKS_DIR
+sudo update-initramfs -u
+
 ##################################################################
 #Обновление логотипа
 
@@ -361,10 +365,8 @@ if (( UNALLOCATED > 1000000000 ))
 then
   echo "На диске $DISK_DEVICE обнаружено нераспределенное пространство."
   echo "Раздел $PARTITION_DEVICE, содержащий корневую файловую систему,"
-  echo "будет увеличен на $UNALLOCATED байт, требуется перезагрузка."
-  sudo rsync -av $BIN_DIR/$INITRAMFS_RESIZE_SCRIPT $INITRAMFS_SCRIPTS_DIR
-  sudo rsync -av $BIN_DIR/$INITRAMFS_TOOLS_SCRIPT $INITRAMFS_INITRAMFS_HOOKS_DIR
-  sudo update-initramfs -u
+  echo "может быть автоматически увеличен на $UNALLOCATED байт, требуется перезагрузка."
+  #touch /var/run/reboot-required
 fi
 
 if [ -f /var/run/reboot-required ]; then
