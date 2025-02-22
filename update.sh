@@ -296,8 +296,8 @@ fi
 rsync -av $SRC_DIR/$CONKY_CONF_TEMPLATE $CONKY_CONF_DIR
 rsync -av $SRC_DIR/$CONKY_FONT $CONKY_CONF_DIR
 
-sudo rsync -av $BIN_DIR/$INITRAMFS_RESIZE_SCRIPT $INITRAMFS_SCRIPTS_DIR
-sudo rsync -av $BIN_DIR/$INITRAMFS_TOOLS_SCRIPT $INITRAMFS_INITRAMFS_HOOKS_DIR
+sudo rsync -av $SRC_DIR/$INITRAMFS_RESIZE_SCRIPT $INITRAMFS_SCRIPTS_DIR
+sudo rsync -av $SRC_DIR/$INITRAMFS_TOOLS_SCRIPT $INITRAMFS_INITRAMFS_HOOKS_DIR
 sudo update-initramfs -u
 
 ##################################################################
