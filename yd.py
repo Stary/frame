@@ -91,7 +91,7 @@ def load_config(config_path):
         logger.debug(f"Loading config from {config_path}")
         with open(config_path) as file:
             for line in file:
-                m=re.match(r'^\s*([a-zA-Z0-9\-_.]+)\s*=\s*([a-zA-Z0-9\-_:./]+).*', line, flags=re.DOTALL | re.IGNORECASE)
+                m=re.match(r'^\s*([a-zA-Z0-9\-_.]+)\s*=\s*\"?([a-zA-Z0-9\-_:./]+).*', line, flags=re.DOTALL | re.IGNORECASE)
                 if m is not None:
                     logger.debug(f"Line: {m.group(1)}={m.group(2)}")
                     if m.group(1) == 'YANDEX_DISK_PUBLIC_URL' and re.match(r'https://disk.yandex.ru/d/[a-z0-9]+',
