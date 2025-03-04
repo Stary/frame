@@ -63,6 +63,8 @@ then
       echo "Конфигурационный файл: $LOCAL_DIR/$CONFIG"
     fi
   fi
+  export DISPLAY=:0
+  xrandr | head -3
   exit
 fi
 
