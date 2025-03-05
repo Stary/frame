@@ -54,6 +54,6 @@ SECTORS_COUNT=$((END_SECTOR + BUFFER_SECTORS))
 echo "Dumping $SECTORS_COUNT sectors from $DISK_DEVICE..."
 
 # Create the compressed image
-dd if=$DISK_DEVICE bs=512 count=$SECTORS_COUNT status=progress | gzip > frame.$TS.gz
+dd if=$DISK_DEVICE bs=512 count=$SECTORS_COUNT status=progress | gzip > frame.$TS.img.gz
 
 echo "Image created: frame.$TS.gz"

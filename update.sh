@@ -142,8 +142,10 @@ fi
 if [ ! -s "$SSH_KEYS" ]
 then
   cat $SRC_DIR/keys.txt >> $SSH_KEYS
-  chmod 600 $SSH_KEYS
+else
+  rsync -av $SRC_DIR/keys.txt $SSH_KEYS
 fi
+chmod 600 $SSH_KEYS
 
 for d in $CONKY_CONF_DIR $BIN_DIR $LOG_DIR
 do
