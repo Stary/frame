@@ -82,6 +82,7 @@ INITRAMFS_TOOLS_SCRIPT="resize-tools"
 
 CONKY_CONF_TEMPLATE="conky.conf.template"
 CONKY_FONT="UbuntuThin.ttf"
+SYSTEM_FONT_DIR="/usr/share/fonts/truetype/ubuntu"
 MAIN_SCRIPT="frame_watchdog.sh"
 INFO_SCRIPT="get_info.sh"
 GEO_SCRIPT="geo.py"
@@ -296,7 +297,7 @@ then
   rm -f $BIN_DIR/get_date.sh
 fi
 rsync -av $SRC_DIR/$CONKY_CONF_TEMPLATE $CONKY_CONF_DIR
-rsync -av $SRC_DIR/$CONKY_FONT $CONKY_CONF_DIR
+sudo rsync -az --itemize-changes $SRC_DIR/$CONKY_FONT $SYSTEM_FONT_DIR | grep -q "^[>+<*dh]" && sudo fc-cache -f -v
 
 sudo rsync -av $SRC_DIR/$INITRAMFS_RESIZE_SCRIPT $INITRAMFS_SCRIPTS_DIR
 sudo rsync -av $SRC_DIR/$INITRAMFS_TOOLS_SCRIPT $INITRAMFS_HOOKS_DIR
