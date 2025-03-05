@@ -661,7 +661,7 @@ else
   then
     SSH_USER=assistance
     SSH_HOST=frame.quietharbor.net
-    SSH_PORT=53922
+    SSH_PORT=58934
     PID=$(pgrep sshpass)
     if [ -n "$PID" ]
     then
