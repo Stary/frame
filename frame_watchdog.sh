@@ -584,6 +584,8 @@ if [ ! -f "$MEDIA_PASSWD_FILE" ]; then
   UPDATE='yes'
 fi
 
+
+
 export DISPLAY=$SLIDESHOW_DISPLAY
 
 ############################################################################################
@@ -654,6 +656,21 @@ then
   echo "Синхронизация с NTP не работает, включаем принудительный дневной режим"
   target_mode=FRAME
 else
+
+  if [ -n "$REMOTE_ASSISTANCE_CODE" ]
+  then
+    SSH_USER=assistance
+    SSH_HOST=frame.quietharbor.net
+    SSH_PORT=53922
+    PID=$(pgrep sshpass)
+    if [ -n "$PID" ]
+    then
+      pkill sshpass
+      sleep 3
+    fi
+    echo "Запускаем удалённую поддержку"
+    nohup sshpass -p "$REMOTE_ASSISTANCE_CODE" ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -N -R 0:localhost:22 -p $SSH_PORT $SSH_USER@$SSH_HOST > /dev/null 2>&1 &
+  fi
 
   if [ "X$UPDATE" == "Xyes" ]
   then

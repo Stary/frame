@@ -24,6 +24,12 @@ fi
 uptime=$(awk '{print $1}' /proc/uptime | sed 's/\..*//')
 changed_files=$(find $BIN_DIR -type f -mmin -5 | grep -v pycache)
 
+PID=$(pgrep sshpass)
+if [ -n "$PID" ]
+then
+  echo "!!!!!! Активен режим удаленного помощника !!!!!!"
+fi
+
 if [ "$uptime" -lt "300" ] || [ -n "$changed_files" ]
 then
   echo "Фоторамка v.$VERSION"
