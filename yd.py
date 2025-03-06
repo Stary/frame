@@ -363,7 +363,7 @@ def index_remote_folder(public_url, path=None):
     global logger
 
     api_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
-    limit = 100  # Number of items per request; adjust based on API limits
+    limit = 20  # Number of items per request; adjust based on API limits
     offset = 0  # Starting point for the next batch
 
     while True:
@@ -381,6 +381,7 @@ def index_remote_folder(public_url, path=None):
             response.raise_for_status()
             data = response.json()
             items = data.get('_embedded', {}).get('items', [])
+            logger.debug(f"Loading items {offset}-{offset+limit}")
 
             for item in items:
                 path = item.get('path', '')
