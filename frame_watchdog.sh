@@ -281,7 +281,7 @@ process_config_file() {
             var_value="${var_value//[$'\n\r']/}"
             
             # Log accepted entries
-            echo "$(date '+%Y-%m-%d %H:%M:%S') [$config_source] Accepting: $var_name" >&2
+            #echo "$(date '+%Y-%m-%d %H:%M:%S') [$config_source] Accepting: $var_name" >&2
             
             echo "$var_name=$var_value" >> "$TMP_CONFIG"
         else
@@ -297,7 +297,7 @@ process_config_file() {
             echo "ERROR: Malformed temporary config file, skipping" >&2
             return 1
         fi
-        echo "Loading config $config_source: $config_file"
+        #echo "Loading config $config_source: $config_file"
         source "$TMP_CONFIG"
     fi
 }
