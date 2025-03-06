@@ -363,6 +363,56 @@ def index_remote_folder(public_url, path=None):
     global logger
 
     api_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
+    limit = 100  # Number of items per request; adjust based on API limits
+    offset = 0  # Starting point for the next batch
+
+    while True:
+        params = {
+            'public_key': public_url,
+            'fields': '_embedded.items.name,_embedded.items.md5,_embedded.items.size,_embedded.items.type,_embedded.items.mime_type,_embedded.items.path,_embedded.items.file',
+            'limit': limit,
+            'offset': offset
+        }
+        if path is not None:
+            params['path'] = path
+
+        try:
+            response = requests.get(api_url, params=params, timeout=HTTP_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+            items = data.get('_embedded', {}).get('items', [])
+
+            for item in items:
+                path = item.get('path', '')
+                item_type = item.get('type', '')
+                if item_type == 'dir' and path != '':
+                    index_remote_folder(public_url, path)  # Recurse into subdirectories
+                elif item_type == 'file':
+                    name = item.get('name', '')
+                    mime = item.get('mime_type', '')
+                    md5 = item.get('md5', '')
+                    size = item.get('size', '')
+                    download_url = item.get('file', '')
+                    rel_path = re.sub(r'^/', '', path)
+                    idx_rec = {'size': size, 'md5': md5, 'ts': time.time(), 'mime': mime, 'download_url': download_url}
+                    r.hset(REMOTE_INDEX_NAME, rel_path, json.dumps(idx_rec))
+                    logger.debug(f"Remote index: {rel_path} => {idx_rec}")
+
+            # If fewer items than 'limit' are returned, we've fetched everything
+            if len(items) < limit:
+                break
+            offset += limit  # Move to the next batch
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching remote folder: {e}")
+            break  # Exit on error to avoid infinite loop
+
+def index_remote_folder_old(public_url, path=None):
+    watchdog('keepalive')
+
+    global logger
+
+    api_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
     params = {'public_key': public_url, 'fields': '_embedded.items.name,_embedded.items.md5,_embedded.items.md5,' +\
         '_embedded.items.size,_embedded.items.type,_embedded.items.mime_type,_embedded.items.path,_embedded.items.file' }
     if path is not None:
