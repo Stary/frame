@@ -627,6 +627,7 @@ if [[ "$valid_orientation" == true ]]; then
       fi
     else
       echo "String does not match expected format."
+      SCREEN_ORIENTATION="normal"
     fi
   fi
 
@@ -683,6 +684,31 @@ else
       exit
     else
       echo "Для обновления требуется стабильное подключение к Интернету, обновление пока пропускаем"
+    fi
+  fi
+
+  ############ Настройка периодического задания для запуска синхронизации с Яндекс-Диском ##################
+  cur_crontab_line=$(crontab -l 2>/dev/null | grep $YANDEX_DISK_SYNC_SCRIPT)
+  if [ -n "$YANDEX_DISK_PUBLIC_URL" ]
+  then
+    if [ "$USB_READY" -gt "0" ]
+    then
+      YANDEX_DISK_DIR=$USB_DIR/yandex.disk
+    else
+      YANDEX_DISK_DIR=$LOCAL_DIR/yandex.disk
+    fi
+    target_crontab_line="3,13,23,33,43,53 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $YANDEX_DISK_DIR >> $LOG_DIR/cron.log 2>&1"
+    if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
+    then
+      echo "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK_DIR"
+      (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
+    fi
+  else
+    if [ -n "$cur_crontab_line" ]
+    then
+      target_crontab_line=""
+      echo "Выключаем синхронизацию с Яндекс Диском"
+      crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT | crontab -l
     fi
   fi
 
@@ -832,32 +858,7 @@ FRAME)
 
     sudo chown -R $USER:$USER "$IMAGES_DIR" 2>/dev/null
 
-    ############ Настройка периодического задания для запуска синхронизации с Яндекс-Диском ##################
-    cur_crontab_line=$(crontab -l 2>/dev/null | grep $YANDEX_DISK_SYNC_SCRIPT)
-    if [ -n "$YANDEX_DISK_PUBLIC_URL" ] && [ -n "$WIFI_SSID" ]
-    then
-      if [ "$USB_READY" -gt "0" ]
-      then
-        YANDEX_DISK_DIR=$USB_DIR/yandex.disk
-      else
-        YANDEX_DISK_DIR=$LOCAL_DIR/yandex.disk
-      fi
-      target_crontab_line="3,13,23,33,43,53 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $YANDEX_DISK_DIR >> $LOG_DIR/cron.log 2>&1"
-      if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
-      then
-        echo "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK_DIR"
-        (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
-      fi
-    else
-      if [ -n "$cur_crontab_line" ]
-      then
-        target_crontab_line=""
-        echo "Выключаем синхронизацию с Яндекс Диском"
-        crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT | crontab -l
-      fi
-    fi
-
-    #Удалим старую версию списка
+   #Удалим старую версию списка
     unlink "$IMAGES_DIR/processed.lst" 2>/dev/null
 
     PROCESSED_LIST="$TMP_IMAGES_DIR/processed.lst"
