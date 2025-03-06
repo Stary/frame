@@ -400,6 +400,7 @@ def index_remote_folder(public_url, path=None):
 
             # If fewer items than 'limit' are returned, we've fetched everything
             if len(items) < limit:
+                logger.debug(f"Finished fetching remote folder {len(items)} < {limit}")
                 break
             offset += limit  # Move to the next batch
 
