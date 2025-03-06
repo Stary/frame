@@ -381,7 +381,7 @@ def index_remote_folder(public_url, path=None):
             response.raise_for_status()
             data = response.json()
             items = data.get('_embedded', {}).get('items', [])
-            logger.debug(f"Loading items {offset}-{offset+limit}")
+            logger.debug(f"Loading items {offset}-{offset+len(items)}")
 
             for item in items:
                 path = item.get('path', '')
