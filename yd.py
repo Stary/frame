@@ -49,6 +49,8 @@ def leave(rc=0):
     sys.exit(rc)
 
 
+
+
 def init_logging(log_name='yd'):
     logger = logging.getLogger(log_name)
     logger.setLevel(LOG_LEVEL)
@@ -380,6 +382,7 @@ def index_remote_folder(public_url, path=None):
             response = requests.get(api_url, params=params, timeout=HTTP_TIMEOUT)
             response.raise_for_status()
             data = response.json()
+            logger.debug(f"API Response for path={path}, offset={offset}: {json.dumps(data, indent=4)}")
             items = data.get('_embedded', {}).get('items', [])
             logger.debug(f"Loading items {offset}-{offset+len(items)}")
 
