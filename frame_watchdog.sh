@@ -36,6 +36,7 @@ USB_DIR=/media/usb
 LOCAL_DIR=/media/photo
 DEMO_DIR=/media/demo
 MEDIA_USER=media
+ARCHIVE_DIR=''
 
 BIN_DIR=$HOME/bin
 LOG_DIR=/var/log/frame
@@ -522,6 +523,10 @@ YANDEX_MAIL_APP_PASSWORD="$YANDEX_MAIL_APP_PASSWORD"
 #содержащую подборку красивых фотографий природы
 YANDEX_DISK_PUBLIC_URL="$YANDEX_DISK_PUBLIC_URL"
 
+#Папка для архива удаленных файлов, указывается относительно основной папки с изображениями.
+#Если архив предполагается разместить в основной папке с изображениями, то указать ARCHIVE_DIR='.'
+ARCHIVE_DIR="$ARCHIVE_DIR"
+
 EOM
 
 config_changed=0
@@ -694,14 +699,19 @@ else
   then
     if [ "$USB_READY" -gt "0" ]
     then
-      YANDEX_DISK_DIR=$USB_DIR/yandex.disk
+      YANDEX_DISK_PARENT_DIR=$USB_DIR
     else
-      YANDEX_DISK_DIR=$LOCAL_DIR/yandex.disk
+      YANDEX_DISK_PARENT_DIR=$LOCAL_DIR
     fi
-    target_crontab_line="3,13,23,33,43,53 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $YANDEX_DISK_DIR >> $LOG_DIR/cron.log 2>&1"
+    YANDEX_DISK="$YANDEX_DISK_PARENT_DIR/yandex.disk"
+    if [ -n "$ARCHIVE_DIR" ]
+    then
+      ARCHIVE_DIR="$YANDEX_DISK_PARENT_DIR/$ARCHIVE_DIR"
+    fi
+    target_crontab_line="3,13,23,33,43,53 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $YANDEX_DISK $ARCHIVE_DIR >> $LOG_DIR/cron.log 2>&1"
     if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
     then
-      echo "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK_DIR"
+      echo "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
       (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
     fi
   else
