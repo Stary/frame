@@ -606,7 +606,7 @@ purge_remote_index(start_ts)
 #Фиксируем, на какой момент синхронизированы данные
 watchdog('sync')
 
-changes = sync_remote_to_local_folder(LOCAL_SYNC_DIR, ARCHIVE_DIRfilter_mime='image')
+changes = sync_remote_to_local_folder(LOCAL_SYNC_DIR, ARCHIVE_DIR, filter_mime='image')
 if changes > 0:
     notify_on_change(config_file)
 
