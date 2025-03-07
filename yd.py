@@ -382,7 +382,7 @@ def index_remote_folder(public_url, root_path=None):
             response = requests.get(api_url, params=params, timeout=HTTP_TIMEOUT)
             response.raise_for_status()
             data = response.json()
-            logger.debug(f"API Response for path={root_path}, offset={offset}: {json.dumps(data, indent=4)}")
+            #logger.debug(f"API Response for path={root_path}, offset={offset}: {json.dumps(data, indent=4)}")
             items = data.get('_embedded', {}).get('items', [])
             logger.debug(f"Loading items {offset}-{offset+len(items)}")
 
@@ -606,7 +606,7 @@ purge_remote_index(start_ts)
 #Фиксируем, на какой момент синхронизированы данные
 watchdog('sync')
 
-changes = sync_remote_to_local_folder(LOCAL_SYNC_DIR, filter_mime='image')
+changes = sync_remote_to_local_folder(LOCAL_SYNC_DIR, ARCHIVE_DIRfilter_mime='image')
 if changes > 0:
     notify_on_change(config_file)
 
