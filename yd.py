@@ -412,40 +412,6 @@ def index_remote_folder(public_url, root_path=None):
             logger.error(f"Error fetching remote folder: {e}")
             break  # Exit on error to avoid infinite loop
 
-def index_remote_folder_old(public_url, path=None):
-    watchdog('keepalive')
-
-    global logger
-
-    api_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
-    params = {'public_key': public_url, 'fields': '_embedded.items.name,_embedded.items.md5,_embedded.items.md5,' +\
-        '_embedded.items.size,_embedded.items.type,_embedded.items.mime_type,_embedded.items.path,_embedded.items.file' }
-    if path is not None:
-        params['path'] = path
-
-    response = requests.get(api_url, params=params, timeout=HTTP_TIMEOUT)
-    response.raise_for_status()
-    #logger.debug(f"{json.dumps(response.json(), indent=4, sort_keys=True, ensure_ascii=False)}")
-
-    items = response.json().get('_embedded', {}).get('items', [])
-    for item in items:
-        name = item.get('name', '')
-        path = item.get('path', '')
-        mime = item.get('mime_type', '')
-        md5 = item.get('md5', '')
-        size = item.get('size', '')
-        item_type = item.get('type', '')
-        download_url = item.get('file', '')
-        #logger.debug(f"Item: {item}")
-        if item.get('type','') == 'dir' and path != '':
-            index_remote_folder(public_url, path)
-        elif item_type == 'file':
-            rel_path = re.sub(r'^/', '', str(path))
-            idx_rec = {'size': size, 'md5': md5, 'ts': time.time(), 'mime': mime, 'download_url': download_url}
-            r.hset(REMOTE_INDEX_NAME, rel_path, json.dumps(idx_rec))
-            logger.debug(f"Remote index: {rel_path} => {idx_rec}")
-
-
 def purge_remote_index(ts):
     watchdog('keepalive')
 
@@ -461,7 +427,7 @@ def purge_remote_index(ts):
                         r.hdel('remote_index', f)
 
 
-def sync_remote_to_local_folder(target_folder, filter_mime=''):
+def sync_remote_to_local_folder(target_folder, archive_folder=None, filter_mime=''):
     watchdog('keepalive')
 
     if not os.path.isdir(target_folder):
@@ -527,8 +493,19 @@ def sync_remote_to_local_folder(target_folder, filter_mime=''):
 
     watchdog('keepalive')
     for idx_rec in delete_list:
-        logger.info(f"Delete {idx_rec}")
-        os.unlink(idx_rec['local_f'])
+        if archive_folder is not None and os.path.exists(idx_rec['local_f']):
+            logger.info(f"Archive {idx_rec['local_f']}")
+            # Get the relative path of the file with respect to target_folder
+            rel_path = os.path.relpath(idx_rec['local_f'], target_folder)
+            # Create the destination path with the same directory structure
+            dest_path = os.path.join(archive_folder, os.path.dirname(rel_path))
+            # Create directories if they don't exist
+            os.makedirs(dest_path, exist_ok=True)
+            # Move the file to the archive with the same directory structure
+            os.rename(idx_rec['local_f'], os.path.join(archive_folder, rel_path))
+        else:
+            logger.info(f"Delete {idx_rec['local_f']}")
+            os.unlink(idx_rec['local_f'])
         index_local_file(idx_rec['local_f'], remove=True)
         changed_files += 1
 
@@ -567,7 +544,7 @@ r = connect_redis()
 
 
 if len(sys.argv) < 3:
-    eprint(f"Usage: {sys.argv[0]} path_to_frame.cfg path_to_images_folder")
+    eprint(f"Usage: {sys.argv[0]} path_to_frame.cfg path_to_images_folder [path_to_archive_folder]")
     leave(-1)
 
 config_file=os.path.expanduser(sys.argv[1])
@@ -582,6 +559,16 @@ if not os.path.isdir(LOCAL_SYNC_DIR):
 if not os.path.isdir(LOCAL_SYNC_DIR):
     eprint(f"sync dir {LOCAL_SYNC_DIR} doesn't exist and can't be created")
     leave(-1)
+
+if len(sys.argv) > 3:
+    ARCHIVE_DIR=os.path.expanduser(sys.argv[3])
+    if not os.path.isdir(ARCHIVE_DIR):
+        os.makedirs(ARCHIVE_DIR, exist_ok=True)
+    if not os.path.isdir(ARCHIVE_DIR):
+        eprint(f"archive dir {ARCHIVE_DIR} doesn't exist and can't be created")
+        leave(-1)
+else:
+    ARCHIVE_DIR = None
 
 load_config(config_file)
 
@@ -630,7 +617,3 @@ watchdog('stop')
 #ToDo: По окончании результативной синхронизации (когда были скачаны или удалены файлы) перезапускать слайдшоу
 #ToDo: Ограничение на общее количество попыток обращений к Я.Д
 #ToDo: Уведомление через телеграм об ошибках
-
-
-
-
