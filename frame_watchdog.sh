@@ -36,7 +36,7 @@ USB_DIR=/media/usb
 LOCAL_DIR=/media/photo
 DEMO_DIR=/media/demo
 MEDIA_USER=media
-ARCHIVE_DIR=''
+ARCHIVE_DIR='archive'
 
 BIN_DIR=$HOME/bin
 LOG_DIR=/var/log/frame
