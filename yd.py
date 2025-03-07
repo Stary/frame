@@ -359,13 +359,13 @@ def purge_local_index(p):
             index_local_file(f, remove=True)
 
 
-def index_remote_folder(public_url, path=None):
+def index_remote_folder(public_url, root_path=None):
     watchdog('keepalive')
 
     global logger
 
     api_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
-    limit = 1000  # Number of items per request; adjust based on API limits
+    limit = 100  # Number of items per request; adjust based on API limits
     offset = 0  # Starting point for the next batch
 
     while True:
@@ -375,14 +375,14 @@ def index_remote_folder(public_url, path=None):
             'limit': limit,
             'offset': offset
         }
-        if path is not None:
-            params['path'] = path
+        if root_path is not None:
+            params['path'] = root_path
 
         try:
             response = requests.get(api_url, params=params, timeout=HTTP_TIMEOUT)
             response.raise_for_status()
             data = response.json()
-            logger.debug(f"API Response for path={path}, offset={offset}: {json.dumps(data, indent=4)}")
+            logger.debug(f"API Response for path={root_path}, offset={offset}: {json.dumps(data, indent=4)}")
             items = data.get('_embedded', {}).get('items', [])
             logger.debug(f"Loading items {offset}-{offset+len(items)}")
 
