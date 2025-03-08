@@ -966,6 +966,9 @@ DESKTOP)
   ;;
 OFF)
   set_power_mode standby
+  pkill unclutter
+  pkill feh
+  pkill conky
   ;;
 *)
   echo "Неизвестный режим '$target_mode'"
