@@ -24,8 +24,8 @@ fi
 uptime=$(awk '{print $1}' /proc/uptime | sed 's/\..*//')
 changed_files=$(find $BIN_DIR -type f -mmin -5 | grep -v pycache)
 
-PID=$(pgrep sshpass)
-if [ -n "$PID" ]
+SSH_SESSIONS=$( w | grep ssh | grep -v media)
+if [ -n "$SSH_SESSIONS" ]
 then
   echo "!!!!!! Активен режим удаленного помощника !!!!!!"
 fi
