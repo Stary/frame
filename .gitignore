@@ -1,2 +1,6 @@
-/geo.log
+*.log
+*.log.*
 .idea/vcs.xml
+frame.iml
+misc.xml
+

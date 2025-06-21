@@ -1,16 +1,28 @@
 #!/bin/sh
 set -e
 
-# Log to kernel messages
+# Log to kernel messages and optionally to /tmp/resize-fs.log for debugging
 log() {
     echo "resizefs: $*" > /dev/kmsg
+    echo "resizefs: $*" >> /tmp/resize-fs.log
 }
+
+cleanup() {
+    rm -f /tmp/parted_output /tmp/e2fsck_output /tmp/resize2fs_output
+}
+trap cleanup EXIT
 
 log "========== Resize Root Partition Script =========="
 log "Started at $(date)"
 
+# Check if running in initramfs (root is tmpfs and /init exists)
+if ! grep -qw 'rootfs' /proc/mounts || [ ! -e /init ]; then
+    log "ERROR: Not running in initramfs! Aborting for safety."
+    exit 1
+fi
+
 # Check if tools are available
-for cmd in parted resize2fs blkid e2fsck dumpe2fs; do
+for cmd in parted resize2fs blkid e2fsck dumpe2fs partprobe udevadm; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         log "ERROR: Command '$cmd' not found in initramfs!"
         exit 1
@@ -25,7 +37,6 @@ if [ -z "$ROOT_SPEC" ]; then
 fi
 log "Root spec from cmdline: $ROOT_SPEC"
 
-# Dump full cmdline for debugging
 log "Full /proc/cmdline: $(cat /proc/cmdline)"
 
 # Resolve UUID to device path if necessary
@@ -44,7 +55,7 @@ else
     log "Using direct root device: $ROOT_DEV"
 fi
 
-# Extract disk and partition number
+# Only support /dev/mmcblk*p* devices (Raspberry Pi SD card)
 case "$ROOT_DEV" in
     /dev/mmcblk*p*)
         DISK=$(echo "$ROOT_DEV" | sed 's/p[0-9]*$//')
@@ -52,7 +63,7 @@ case "$ROOT_DEV" in
         PART="$ROOT_DEV"
         ;;
     *)
-        log "ERROR: Unsupported root device format: $ROOT_DEV"
+        log "ERROR: Unsupported root device format: $ROOT_DEV. Only /dev/mmcblk*p* is allowed!"
         exit 1
         ;;
 esac
@@ -71,7 +82,6 @@ fi
 log "Running: parted $DISK unit B print"
 parted "$DISK" unit B print > /tmp/parted_output 2>&1
 cat /tmp/parted_output > /dev/kmsg
-rm -f /tmp/parted_output
 
 # Get partition sizes in bytes
 TOTAL_DISK_SIZE=$(parted "$DISK" unit B print | awk '/Disk \/dev/{print $3}' | sed 's/B//g')
@@ -95,6 +105,14 @@ log "Disk total size: $TOTAL_DISK_SIZE bytes"
 log "Partition end: $PARTITION_END bytes"
 log "Unallocated size: $UNALLOCATED bytes"
 
+# Check filesystem type
+FSTYPE=$(blkid -o value -s TYPE "$PART")
+if ! echo "$FSTYPE" | grep -Eq '^ext[234]$'; then
+    log "ERROR: Filesystem on $PART is not ext2/3/4 ($FSTYPE). Aborting."
+    exit 1
+fi
+log "Filesystem type: $FSTYPE"
+
 # Get filesystem size in bytes
 FS_BLOCK_COUNT=$(dumpe2fs -h "$PART" 2>/dev/null | grep "^Block count:" | awk '{print $3}')
 FS_BLOCK_SIZE=$(dumpe2fs -h "$PART" 2>/dev/null | grep "^Block size:" | awk '{print $3}')
@@ -116,8 +134,12 @@ else
             log "ERROR: Failed to resize partition $PART_N on $DISK!"
             exit 1
         fi
+        log "Running partprobe and udevadm settle..."
+        partprobe "$DISK"
+        udevadm settle
         sleep 1
-        PARTITION_SIZE=$((TOTAL_DISK_SIZE - PARTITION_START + 1))
+        PARTITION_END=$(parted "$DISK" unit B print | awk "/^ *$PART_N /{print \$3}" | sed 's/B//g')
+        PARTITION_SIZE=$((PARTITION_END - PARTITION_START + 1))
         log "Partition resized to: $PARTITION_SIZE bytes"
     fi
 
@@ -127,27 +149,26 @@ else
         if ! e2fsck -f -y "$PART" > /tmp/e2fsck_output 2>&1; then
             log "ERROR: e2fsck failed on $PART!"
             cat /tmp/e2fsck_output > /dev/kmsg
-            rm -f /tmp/e2fsck_output
             exit 1
         fi
         cat /tmp/e2fsck_output > /dev/kmsg
-        rm -f /tmp/e2fsck_output
         log "Filesystem check complete."
 
         log "Resizing filesystem on $PART..."
         if ! resize2fs "$PART" > /tmp/resize2fs_output 2>&1; then
             log "ERROR: Failed to resize filesystem on $PART!"
             cat /tmp/resize2fs_output > /dev/kmsg
-            rm -f /tmp/resize2fs_output
             exit 1
         fi
         cat /tmp/resize2fs_output > /dev/kmsg
-        rm -f /tmp/resize2fs_output
         log "Resize complete! Filesystem now uses full MicroSD capacity."
     else
         log "Filesystem already matches partition size. No resize needed."
     fi
 fi
 
+# Final state summary
+log "Final partition size: $(parted $DISK unit B print | awk "/^ *$PART_N /{print \$3}" | sed 's/B//g') bytes"
+log "Final filesystem size: $(dumpe2fs -h $PART 2>/dev/null | grep '^Block count:' | awk '{print $3}') x $(dumpe2fs -h $PART 2>/dev/null | grep '^Block size:' | awk '{print $3}') bytes"
 log "Script completed successfully."
 exit 0
