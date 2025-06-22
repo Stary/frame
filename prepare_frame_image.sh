@@ -77,6 +77,7 @@ fi
 rm -fv "$MOUNT_POINT"/var/log/frame/*
 rm -fv "$MOUNT_POINT"/var/log/resize*
 rm -fv "$MOUNT_POINT"/home/orangepi/user.dat
+rm -fv "$MOUNT_POINT"/home/orangepi/update.flag
 rm -fv "$MOUNT_POINT"/etc/systemd/system/resizefs.service
 rm -fv "$MOUNT_POINT"/usr/local/bin/resize_root.sh
 rm -fv "$MOUNT_POINT"/root/.bash_history

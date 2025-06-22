@@ -46,6 +46,7 @@ CONKY_CONF=$HOME/.config/conky/conky.conf
 CONKY_CONF_TEMPLATE=$HOME/.config/conky/conky.conf.template
 
 MEDIA_PASSWD_FILE=$HOME/user.dat
+UPDATE_FLAG_FILE=$HOME/update.flag
 
 YANDEX_DISK_PUBLIC_URL=''
 
@@ -590,7 +591,9 @@ if [ ! -f "$MEDIA_PASSWD_FILE" ]; then
   UPDATE='yes'
 fi
 
-
+if [ -f "$UPDATE_FLAG_FILE" ]; then
+  UPDATE='yes'
+fi
 
 export DISPLAY=$SLIDESHOW_DISPLAY
 
@@ -685,7 +688,7 @@ else
     st=$(get_connection_status)
     if [ "$st" -eq "$NET_OK" ]
     then
-      nohup sh -c 'cd $HOME/frame && sleep 3 && git pull && ./update.sh' >> $LOG_DIR/update.log 2>&1 &
+      nohup sh -c 'cd $HOME/frame && sleep 3 && git pull && rm -f $UPDATE_FLAG_FILE && ./update.sh' >> $LOG_DIR/update.log 2>&1 &
       echo "Управление передается скрипту обновления, скрипт $0 завершается"
       exit
     else
