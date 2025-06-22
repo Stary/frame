@@ -11,7 +11,14 @@ PARTITION_NUM="${2:-1}"
 MOUNT_POINT="${3:-/mnt/frame}"
 USER_HOME="${4:-/home/orangepi}"
 IMAGE_SIZE="${5:-8G}"
-PARTITION_DEVICE="${DISK_DEVICE}${DISK_DEVICE##*/sd}1"
+case "$DISK_DEVICE" in
+    /dev/mmcblk*|/dev/nvme*)
+        PARTITION_DEVICE="${DISK_DEVICE}p${PARTITION_NUM}"
+        ;;
+    *)
+        PARTITION_DEVICE="${DISK_DEVICE}${PARTITION_NUM}"
+        ;;
+esac
 TS=$(date +%Y%m%d)
 
 # Confirm settings with user

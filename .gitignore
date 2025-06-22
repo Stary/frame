@@ -1,6 +1,12 @@
 *.log
 *.log.*
-.idea/vcs.xml
-frame.iml
-misc.xml
+.idea/frame.iml
+.idea/misc.xml
+__pycache__
+.DS_Store
+.idea/frame.iml
+.idea/misc.xml
+
+
+
 
