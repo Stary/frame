@@ -779,6 +779,7 @@ else
 fi
 
 pkill -f xfce4-display-settings
+pkill -f blueman-applet
 
 case "$target_mode" in
 FRAME)
