@@ -78,7 +78,6 @@ find "$MOUNT_POINT"/etc/netplan -maxdepth 1 -type f -name '*.yaml' ! -name 'oran
 rm -rfv "$MOUNT_POINT"/tmp/* "$MOUNT_POINT"/var/tmp/*
 rm -fv "$MOUNT_POINT"/var/mail/*
 rm -rfv "$MOUNT_POINT"/root/.ssh "$MOUNT_POINT"/home/orangepi/.ssh
-rm -fv "$MOUNT_POINT"/etc/ssh/*key*
 rm -fv "$MOUNT_POINT"/etc/passwd- "$MOUNT_POINT"/etc/shadow- "$MOUNT_POINT"/etc/group- "$MOUNT_POINT"/etc/gshadow-
 # Remove user history and cache
 rm -rfv "$USER_HOME"/.cache/* "$USER_HOME"/.bash_history "$USER_HOME"/.viminfo
