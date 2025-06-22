@@ -65,6 +65,14 @@ fi
 
 mount "$PARTITION_DEVICE" "$MOUNT_POINT"
 
+if [ -s "$MOUNT_POINT"/home/orangepi/frame.cfg ]; then
+  sed -i "s/UPDATE=no/UPDATE=yes/" "$MOUNT_POINT"/home/orangepi/frame.cfg
+  echo "Update flag set in $MOUNT_POINT/home/orangepi/frame.cfg"
+else
+  echo "Error: $MOUNT_POINT/home/orangepi/frame.cfg not found. Aborting." >&2
+  exit 1
+fi
+
 # Remove user-specific, temporary and obsolete files
 rm -fv "$MOUNT_POINT"/var/log/frame/*
 rm -fv "$MOUNT_POINT"/var/log/resize*
