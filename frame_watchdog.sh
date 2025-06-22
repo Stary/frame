@@ -722,7 +722,7 @@ else
     then
       target_crontab_line=""
       echo "Выключаем синхронизацию с Яндекс Диском"
-      crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT | crontab -l
+      crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT | crontab -
     fi
   fi
 
