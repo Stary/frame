@@ -66,6 +66,7 @@ rm -fv "$MOUNT_POINT"/etc/systemd/system/resizefs.service
 rm -fv "$MOUNT_POINT"/usr/local/bin/resize_root.sh
 rm -fv "$MOUNT_POINT"/root/.bash_history
 rm -fv "$MOUNT_POINT"/home/orangepi/.bash_history
+find "$MOUNT_POINT"/etc/netplan -maxdepth 1 -type f -name '*.yaml' ! -name 'orangepi-default.yaml' -exec rm -v {} +
 # Broader cleanup
 rm -rfv "$MOUNT_POINT"/tmp/* "$MOUNT_POINT"/var/tmp/*
 rm -fv "$MOUNT_POINT"/var/mail/*
