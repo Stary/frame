@@ -250,7 +250,6 @@ echo -e "$MEDIA_PASSWD\n$MEDIA_PASSWD" | sudo passwd "$MEDIA_USER"
 if [ ! -d "$DEMO_DIR" ] || [ "$(find "$DEMO_DIR" -type f | wc -l)" -eq 0 ]
 then
   sudo mkdir -p "$DEMO_DIR"
-  sudo chown -R $USER:$MEDIA_USER "$DEMO_DIR"
   sudo chmod 775 "$DEMO_DIR"
   $SRC_DIR/$YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$DEMO_ZIP" "$TMP_DEMO_ZIP"
   if [ -s "$TMP_DEMO_ZIP" ]
@@ -258,17 +257,18 @@ then
     unzip -d "$DEMO_DIR" $TMP_DEMO_ZIP
     rm -f $TMP_DEMO_ZIP
     sudo chmod -R g+rw "$DEMO_DIR"
+    sudo chown -R $USER:$MEDIA_USER "$DEMO_DIR"
   else
     rmdir "$DEMO_DIR"
   fi
 fi
 
-if [ ! -d "$PHOTO_DIR" ]
-then
-  sudo mkdir -p "$PHOTO_DIR"
-  sudo chown -R $MEDIA_USER:$MEDIA_USER "$PHOTO_DIR"
-  sudo chmod 775 "$PHOTO_DIR"
-fi
+#if [ ! -d "$PHOTO_DIR" ]
+#then
+sudo mkdir -p "$PHOTO_DIR"
+sudo chown -R $MEDIA_USER:$MEDIA_USER "$PHOTO_DIR"
+sudo chmod 775 "$PHOTO_DIR"
+#fi
 
 if [ $SRC_DIR != $BIN_DIR ];
 then

@@ -54,7 +54,7 @@ DIRS="$USB_DIR $LOCAL_DIR $HOME/photo $DEMO_DIR $HOME/demo"
 IMAGES_DIR=''
 USER=$(whoami)
 IMAGE_EXT_RE='(img|png|jpg|jpeg|heic)'
-
+MIN_IMAGE_SIZE=50000
 RESTART_SLIDESHOW_AFTER=0
 
 WIFI_DEV='wlan0'
@@ -809,7 +809,7 @@ FRAME)
       if [ -d "$d" ]
       then
         TMP_ALL_LIST="/tmp/all.lst"
-        find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" | sort  > $TMP_ALL_LIST
+        find "$d" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" | sort  > $TMP_ALL_LIST
         if [ -s "$TMP_ALL_LIST" ]
         then
           IMAGES_DIR=$d
@@ -826,8 +826,8 @@ FRAME)
           unlink "$RECENT_LIST" 2>/dev/null
           unlink "$OLDER_LIST" 2>/dev/null
 
-          find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin -$RECENT_MINUTES_FIRST | grep -v '/\.' | grep -v -i 'trash' | sort > "$RECENT_LIST"
-          find "$d" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin +$RECENT_MINUTES_FIRST | grep -v '/\.' | grep -v -i 'trash' | sort > "$OLDER_LIST"
+          find "$d" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin -$RECENT_MINUTES_FIRST | grep -v '/\.' | grep -v -i 'trash' | sort > "$RECENT_LIST"
+          find "$d" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -mmin +$RECENT_MINUTES_FIRST | grep -v '/\.' | grep -v -i 'trash' | sort > "$OLDER_LIST"
 
           unlink "$PLAY_LIST" 2>/dev/null
           if [ -s "$RECENT_LIST" ]
@@ -886,9 +886,9 @@ FRAME)
       then
         cat "$ALL_LIST" > "$PROCESSED_LIST"
         echo "Обработка в фоне пользовательских POI"
-        find "$IMAGES_DIR" -type f -size +100k -regextype egrep -iregex ".*[0-9]+\s*(km|m)\.$IMAGE_EXT_RE" -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
+        find "$IMAGES_DIR" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*[0-9]+\s*(km|m)\.$IMAGE_EXT_RE" -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
         echo "Запуск в фоне автоповорота фотографий"
-        find "$IMAGES_DIR" -type f -size +100k -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
+        find "$IMAGES_DIR" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
       else
         echo "Автоповорот уже запущен, пропускаю"
       fi
