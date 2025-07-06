@@ -299,9 +299,25 @@ fi
 rsync -av $SRC_DIR/$CONKY_CONF_TEMPLATE $CONKY_CONF_DIR
 sudo rsync -az --itemize-changes $SRC_DIR/$CONKY_FONT $SYSTEM_FONT_DIR | grep -q "^[>+<*dh]" && sudo fc-cache -f -v
 
-sudo rsync -av $SRC_DIR/$INITRAMFS_RESIZE_SCRIPT $INITRAMFS_SCRIPTS_DIR
-sudo rsync -av $SRC_DIR/$INITRAMFS_TOOLS_SCRIPT $INITRAMFS_HOOKS_DIR
-sudo update-initramfs -u
+if [ "x$RESIZE_ROOTFS" == "xyes" ]
+then
+  echo "Requested resize rootfs on boot, installing tools and updating the image"
+  sudo rsync -av $SRC_DIR/$INITRAMFS_RESIZE_SCRIPT $INITRAMFS_SCRIPTS_DIR
+  sudo rsync -av $SRC_DIR/$INITRAMFS_TOOLS_SCRIPT $INITRAMFS_HOOKS_DIR
+  sudo update-initramfs -u
+  echo "Initramfs resize script has been installed"
+else
+  if [ -s $INITRAMFS_SCRIPTS_DIR/$INITRAMFS_RESIZE_SCRIPT ]
+  then
+    echo "Removing resizef tools from the image"
+    sudo rm -f $INITRAMFS_SCRIPTS_DIR/$INITRAMFS_RESIZE_SCRIPT
+    sudo rm -f $INITRAMFS_HOOKS_DIR/$INITRAMFS_TOOLS_SCRIPT
+    sudo update-initramfs -u
+    echo "Initramfs resize script has been removed"
+  else
+    echo "Initramfs resize script is not installed"
+  fi
+fi
 
 ##################################################################
 #Обновление логотипа
