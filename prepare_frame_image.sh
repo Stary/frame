@@ -92,6 +92,9 @@ rm -fv "$MOUNT_POINT"/etc/passwd- "$MOUNT_POINT"/etc/shadow- "$MOUNT_POINT"/etc/
 rm -rfv "$USER_HOME"/.cache/* "$USER_HOME"/.bash_history "$USER_HOME"/.viminfo
 
 sync
+
+sudo sed -i '/[[:space:]]\/[[:space:]]/ s/commit=[0-9]\+/commit=1/' "$MOUNT_POINT"/etc/fstab
+
 umount "$MOUNT_POINT"
 
 # Filesystem check and shrink to specified image size

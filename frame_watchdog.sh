@@ -977,3 +977,6 @@ OFF)
 *)
   echo "Неизвестный режим '$target_mode'"
 esac
+
+sync
+
