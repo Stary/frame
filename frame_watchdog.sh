@@ -437,7 +437,6 @@ then
       ;;
     $NET_OK)
       echo "Сеть подключена, внешние ресурсы доступны"
-      notify-send "Сеть подключена, внешние ресурсы доступны"
       ;;
     *)
       echo "Неизвестный статус сети: $st"
@@ -546,7 +545,7 @@ config_changed=0
 if [ -s "$HOME/$CONFIG.md5" ]
 then
   c1=$(echo "$config"| md5sum | awk '{print $1}')
-  c2=$(cat $HOME/$CONFIG.md5)
+  c2=$(cat "$HOME/$CONFIG.md5")
   if [ "$c1" != "$c2" ]
   then
     config_changed=1
