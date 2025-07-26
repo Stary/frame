@@ -137,11 +137,9 @@ function get_connection_status {
   wifi_connected=$(sudo nmcli d | grep -i wifi | grep -v -i loopback | grep -c -i -E -e '\sconnected\s')
   gw=$(ip route | awk '/default/ {print $3; exit}')
   gw_available=0
-  echo "wifi_connected=$wifi_connected gw=$gw"
   if [ "$wifi_connected" -gt "0" ] && [ -n "$gw" ]
   then
     gw_ping_lost=$(ping -i 0.05 -c 100 -w 10 -W 10.0 $gw | grep -i loss | cut -d ',' -f 3 | sed -E 's/^\s*([0-9\.]+)\%.*/\1/' | sed -E 's/\.[0-9]+//')
-    echo "gw_ping_lost=$gw_ping_lost"
     if [ -n "$gw_ping_lost" ] && [ "$gw_ping_lost" -lt "30" ]
     then
       gw_available=1
