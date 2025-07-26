@@ -680,6 +680,7 @@ else
       sleep 3
     fi
     echo "Запускаем удалённую поддержку"
+    notify-send "Запускаем удалённую поддержку"
     nohup sshpass -p "$REMOTE_ASSISTANCE_CODE" ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -N -R 0:localhost:22 -p $SSH_PORT $SSH_USER@$SSH_HOST > /dev/null 2>&1 &
   fi
 
@@ -716,6 +717,7 @@ else
     if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
     then
       echo "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
+      notify-send "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
       (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
     fi
   else
@@ -723,6 +725,7 @@ else
     then
       target_crontab_line=""
       echo "Выключаем синхронизацию с Яндекс Диском"
+      notify-send "Выключаем синхронизацию с Яндекс Диском"
       crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT | crontab -
     fi
   fi
@@ -804,12 +807,14 @@ FRAME)
     set_power_mode on
     #xset dpms force on
     #xset -dpms
+    notify-send "Переход в режим рамки"
 
     for d in $DIRS
     do
       if [ -d "$d" ]
       then
         TMP_ALL_LIST="/tmp/all.lst"
+        notify-send "Индексирование фотографий в каталоге $d"
         find "$d" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" | sort  > $TMP_ALL_LIST
         if [ -s "$TMP_ALL_LIST" ]
         then
@@ -842,6 +847,7 @@ FRAME)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
               tail=$(echo "$lines*2 - $offset + 1" | bc)
               echo "Добавляем в плейлист $lines новых фотографий, начиная c $offset"
+              notify-send "Добавляем в плейлист $lines новых фотографий, начиная c $offset"
               cat "$RECENT_LIST" "$RECENT_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
           else
@@ -852,12 +858,14 @@ FRAME)
             if [ "X$RANDOM_ORDER" == "Xyes" ]
             then
               echo "Добавляем в плейлист старые фотографии в случайном порядке"
+              notify-send "Добавляем в плейлист старые фотографии в случайном порядке"
               cat "$OLDER_LIST" | shuf >> "$PLAY_LIST"
             else
               lines=$(wc -l "$OLDER_LIST" | cut -d ' ' -f 1)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
               tail=$(echo "$lines*2 - $offset + 1" | bc)
               echo "Добавляем в плейлист $lines старых фотографий, начиная c $offset"
+              notify-send "Добавляем в плейлист $lines старых фотографий, начиная c $offset"
               cat "$OLDER_LIST" "$OLDER_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
           else
@@ -887,8 +895,10 @@ FRAME)
       then
         cat "$ALL_LIST" > "$PROCESSED_LIST"
         echo "Обработка в фоне пользовательских POI"
+        notify-send "Обработка в фоне пользовательских POI"
         find "$IMAGES_DIR" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*[0-9]+\s*(km|m)\.$IMAGE_EXT_RE" -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
         echo "Запуск в фоне автоповорота фотографий"
+        notify-send "Запуск в фоне автоповорота фотографий"
         find "$IMAGES_DIR" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
       else
         echo "Автоповорот уже запущен, пропускаю"
@@ -928,7 +938,8 @@ FRAME)
       sleep_to_restart=$(echo "$RESTART_SLIDESHOW_AFTER*60-10" | bc)
       if [ "$sleep_to_restart" -gt 0 ]
       then
-        echo "Запускаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
+        echo "Устанавливаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
+        notify-send "Устанавливаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
         nohup sh -c "sleep $sleep_to_restart; pkill -f feh" >/dev/null 2>&1 &
       fi
       feh -V -r -Z -F -Y -D $DELAY -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAY_LIST >> /var/log/frame/feh.log 2>&1 &
@@ -946,6 +957,7 @@ CLOCK)
   if [ -z "$PID" ]
   then
     echo "Переход в режим часов"
+    notify-send "Переход в режим часов"
     unclutter_on
     #Конфигурация часов сохранена в файле ~/.config/conky/conky.conf
     conky
@@ -963,6 +975,7 @@ DESKTOP)
   if [ -n "$PID1" ] || [ -n "$PID2" ] || [ -n "$PID3" ]
   then
     echo "Переход в режим рабочего стола"
+    notify-send "Переход в режим рабочего стола"
     pkill unclutter
     pkill feh
     pkill conky

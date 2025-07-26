@@ -20,6 +20,8 @@ fi
 
 set -v 
 
+notify-send "Запускаю обновление"
+
 OPTION=$1
 
 USER=$(whoami)
@@ -251,6 +253,7 @@ if [ ! -d "$DEMO_DIR" ] || [ "$(find "$DEMO_DIR" -type f | wc -l)" -eq 0 ]
 then
   sudo mkdir -p "$DEMO_DIR"
   sudo chmod 775 "$DEMO_DIR"
+  notify-send "Скачиваем альбом демо-фотографий"
   $SRC_DIR/$YANDEX_DISK_DOWNLOAD_SCRIPT "$YANDEX_DISK_PUBLIC_URL" "$DEMO_ZIP" "$TMP_DEMO_ZIP"
   if [ -s "$TMP_DEMO_ZIP" ]
   then
@@ -272,6 +275,7 @@ sudo chmod 775 "$PHOTO_DIR"
 
 if [ $SRC_DIR != $BIN_DIR ];
 then
+  notify-send "Устанавливаю версию $VERSION"
   rsync -av $SRC_DIR/$MAIN_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$INFO_SCRIPT $BIN_DIR
   rsync -av $SRC_DIR/$PLACE_SCRIPT $BIN_DIR
@@ -341,6 +345,7 @@ then
   if [ "X$local_logo_md5" != "X$target_logo_md5" ]
   then
     echo "Обновляем логотип"
+    notify-send "Обновляем логотип"
     sudo cp -f "$local_logo_file" "$target_logo_file"
     sudo update-initramfs -u
   else
@@ -390,6 +395,7 @@ fi
 
 if [ -f /var/run/reboot-required ]; then
   echo 'Через 10 секунд перезагружаюсь'
+  notify-send 'Через 10 секунд перезагружаюсь'
   sleep 10
   sudo reboot
 fi
@@ -398,6 +404,7 @@ changed_files=$(find "$BIN_DIR" -mtime -1 -type f | grep -v .git | grep -v pycac
 if [ "$changed_files" -ne 0 ] || [ "X$OPTION" == "Xforce" ]
 then
   echo "Изменено файлов: $changed_files, перезапустим сервис"
+  notify-send "Изменено файлов: $changed_files, перезапустим сервис"
   pkill conky
   pkill unclutter
   pkill -f feh
