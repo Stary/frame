@@ -71,7 +71,7 @@ TMP_DEMO_ZIP="/tmp/$DEMO_ZIP"
 CONKY_CONF_DIR="$HOME_DIR/.config/conky"
 BIN_DIR="$HOME_DIR/bin"
 LOG_DIR="/var/log/frame"
-SSH_DIR=$HOME/.ssh
+SSH_DIR=$HOME_DIR/.ssh
 USB_DIR="/media/usb"
 SSH_KEYS=$SSH_DIR/authorized_keys
 
@@ -148,14 +148,14 @@ else
 fi
 chmod 600 $SSH_KEYS
 
-for d in $CONKY_CONF_DIR $BIN_DIR $LOG_DIR
+for d in $CONKY_CONF_DIR $BIN_DIR $LOG_DIR $HOME_DIR
 do
   echo $d
   sudo mkdir -p $d
   sudo chown -R $USER $d
 done
 
-chmod 700 $HOME
+chmod 700 $HOME_DIR
 chmod 700 $LOG_DIR
 
 if [ -s "$SSH_KEYS" ]
@@ -200,8 +200,8 @@ if [ "$ENABLE_EMAIL" = "1" ] && ! command -v mutt &> /dev/null; then
 fi
 
 # Configure mutt if not already configured
-if [ "$ENABLE_EMAIL" = "1" ] && [ ! -f "$HOME/.muttrc" ]; then
-    cat > "$HOME/.muttrc" << EOL
+if [ "$ENABLE_EMAIL" = "1" ] && [ ! -f "$HOME_DIR/.muttrc" ]; then
+    cat > "$HOME_DIR/.muttrc" << EOL
 set sendmail="/usr/sbin/sendmail -oem -oi"
 set use_from=yes
 set realname="Frame Reporter"
