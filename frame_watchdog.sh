@@ -64,6 +64,7 @@ WIFI_DEV='wlan0'
 WIFI_SSID=''
 WIFI_PASSWORD=''
 
+export DISPLAY=$SLIDESHOW_DISPLAY
 
 function unclutter_on {
   unclutter_pid=$(pgrep unclutter)
