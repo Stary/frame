@@ -232,7 +232,7 @@ do
     if sudo mount "$name" $USB_DIR -o umask=000,user,utf8
     then
       echo "Флэшка успешно подключена"
-      notify-send "Флэшка подключена"
+      notify-send -t 10000 "Флэшка подключена"
     fi
     pkill feh
   fi
@@ -320,7 +320,7 @@ then
   while IFS= read -r -d '' file
   do
     echo "Обнаружен файл с данными для подключения к сети WiFi: $file"
-    notify-send "Обнаружен файл с данными для подключения к сети WiFi: $file"
+    notify-send -t 10000 "Обнаружен файл с данными для подключения к сети WiFi: $file"
     WIFI_SSID2=""
     WIFI_PASSWORD2=""
     while IFS= read -r line
@@ -344,18 +344,18 @@ then
               if [ "$connected" -gt "0" ]
               then
                 echo "Успешно подключились к сети $WIFI_SSID2"
-                notify-send "Успешно подключились к сети $WIFI_SSID2"
+                notify-send -t 10000 "Успешно подключились к сети $WIFI_SSID2"
                 WIFI_SSID=$WIFI_SSID2
                 WIFI_PASSWORD=$WIFI_PASSWORD2
               else
                 echo "Не удалось подключиться к сети $WIFI_SSID2"
-                notify-send "Не удалось подключиться к сети $WIFI_SSID2"
+                notify-send -t 10000 "Не удалось подключиться к сети $WIFI_SSID2"
                 sudo nmcli con del "$WIFI_SSID2"
               fi
               sudo mv -f "$file" "$file.backup"
             else
               echo "Сеть $WIFI_SSID2 не нашлась в списке подключений"
-              notify-send "Сеть $WIFI_SSID2 не нашлась в списке подключений"
+              notify-send -t 10000 "Сеть $WIFI_SSID2 не нашлась в списке подключений"
             fi
           else
             echo "Параметры сети в файле $file совпадают с уже известными"
@@ -423,7 +423,7 @@ then
   case "$st" in
     $NET_DOWN)
       echo "Сеть восстановить перезапуском Network Manager не удалось, возможно, потребуется перезагрузка"
-      notify-send "Сеть восстановить перезапуском Network Manager не удалось, возможно, потребуется перезагрузка"
+      notify-send -t 10000 "Сеть восстановить перезапуском Network Manager не удалось, возможно, потребуется перезагрузка"
       ;;
     $NET_NOT_CONNECTED)
       echo "Сеть не подключена, пытаемся подключиться"
@@ -434,17 +434,17 @@ then
       if [[ $res == *"property is invalid"* ]] || [[ $res == *"not provided"* ]]
       then
         echo "Неправильный пароль $WIFI_PASSWORD"
-        notify-send "Неправильный пароль к сети $WIFI_SSID"
+        notify-send -t 10000 "Неправильный пароль к сети $WIFI_SSID"
         st=$(get_connection_status)
       else
         st=$(get_connection_status)
         echo "Состояние после подключения: $st"
-        notify-send "Состояние после подключения: $st"
+        notify-send -t 10000 "Состояние после подключения: $st"
       fi
       ;;
     $NET_REMOTE_FAIL)
       echo "Сеть подключена, но доступен только шлюз по-умолчанию. Вероятно, проблема у провайдера"
-      notify-send "Сеть подключена, но доступен только шлюз по-умолчанию. Вероятно, проблема у провайдера"
+      notify-send -t 10000 "Сеть подключена, но доступен только шлюз по-умолчанию. Вероятно, проблема у провайдера"
       ;;
     $NET_OK)
       echo "Сеть подключена, внешние ресурсы доступны"
@@ -704,7 +704,7 @@ else
       sleep 3
     fi
     echo "Запускаем удалённую поддержку"
-    notify-send "Запускаем удалённую поддержку"
+    notify-send -t 10000 "Запускаем удалённую поддержку"
     nohup sshpass -p "$REMOTE_ASSISTANCE_CODE" ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -N -R 0:localhost:22 -p $SSH_PORT $SSH_USER@$SSH_HOST > /dev/null 2>&1 &
   fi
 
@@ -741,7 +741,7 @@ else
     if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
     then
       echo "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
-      notify-send "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
+      notify-send -t 10000 "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
       (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
     fi
   else
@@ -749,7 +749,7 @@ else
     then
       target_crontab_line=""
       echo "Выключаем синхронизацию с Яндекс Диском"
-      notify-send "Выключаем синхронизацию с Яндекс Диском"
+      notify-send -t 10000 "Выключаем синхронизацию с Яндекс Диском"
       crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT | crontab -
     fi
   fi
@@ -831,14 +831,14 @@ FRAME)
     set_power_mode on
     #xset dpms force on
     #xset -dpms
-    notify-send "Переход в режим рамки"
+    notify-send -t 10000 "Переход в режим рамки"
 
     for d in $DIRS
     do
       if [ -d "$d" ]
       then
         TMP_ALL_LIST="/tmp/all.lst"
-        notify-send "Индексирование фотографий в каталоге $d"
+        notify-send -t 10000 "Индексирование фотографий в каталоге $d"
         find "$d" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" | sort  > $TMP_ALL_LIST
         if [ -s "$TMP_ALL_LIST" ]
         then
@@ -871,7 +871,7 @@ FRAME)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
               tail=$(echo "$lines*2 - $offset + 1" | bc)
               echo "Добавляем в плейлист $lines новых фотографий, начиная c $offset"
-              notify-send "Добавляем в плейлист $lines новых фотографий, начиная c $offset"
+              notify-send -t 10000 "Добавляем в плейлист $lines новых фотографий, начиная c $offset"
               cat "$RECENT_LIST" "$RECENT_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
           else
@@ -882,14 +882,14 @@ FRAME)
             if [ "X$RANDOM_ORDER" == "Xyes" ]
             then
               echo "Добавляем в плейлист старые фотографии в случайном порядке"
-              notify-send "Добавляем в плейлист старые фотографии в случайном порядке"
+              notify-send -t 10000 "Добавляем в плейлист старые фотографии в случайном порядке"
               cat "$OLDER_LIST" | shuf >> "$PLAY_LIST"
             else
               lines=$(wc -l "$OLDER_LIST" | cut -d ' ' -f 1)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
               tail=$(echo "$lines*2 - $offset + 1" | bc)
               echo "Добавляем в плейлист $lines старых фотографий, начиная c $offset"
-              notify-send "Добавляем в плейлист $lines старых фотографий, начиная c $offset"
+              notify-send -t 10000 "Добавляем в плейлист $lines старых фотографий, начиная c $offset"
               cat "$OLDER_LIST" "$OLDER_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
           else
@@ -919,10 +919,10 @@ FRAME)
       then
         cat "$ALL_LIST" > "$PROCESSED_LIST"
         echo "Обработка в фоне пользовательских POI"
-        notify-send "Обработка в фоне пользовательских POI"
+        notify-send -t 10000 "Обработка в фоне пользовательских POI"
         find "$IMAGES_DIR" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*[0-9]+\s*(km|m)\.$IMAGE_EXT_RE" -exec ~/bin/get_place.py '{}' \; >/dev/null 2>&1 &
         echo "Запуск в фоне автоповорота фотографий"
-        notify-send "Запуск в фоне автоповорота фотографий"
+        notify-send -t 10000 "Запуск в фоне автоповорота фотографий"
         find "$IMAGES_DIR" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" -exec exiftran -ai '{}' \;  >/dev/null 2>&1 &
       else
         echo "Автоповорот уже запущен, пропускаю"
@@ -963,7 +963,7 @@ FRAME)
       if [ "$sleep_to_restart" -gt 0 ]
       then
         echo "Устанавливаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
-        notify-send "Устанавливаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
+        notify-send -t 10000 "Устанавливаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
         nohup sh -c "sleep $sleep_to_restart; pkill -f feh" >/dev/null 2>&1 &
       fi
       feh -V -r -Z -F -Y -D $DELAY -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAY_LIST >> /var/log/frame/feh.log 2>&1 &
@@ -981,7 +981,7 @@ CLOCK)
   if [ -z "$PID" ]
   then
     echo "Переход в режим часов"
-    notify-send "Переход в режим часов"
+    notify-send -t 10000 "Переход в режим часов"
     unclutter_on
     #Конфигурация часов сохранена в файле ~/.config/conky/conky.conf
     conky
@@ -999,7 +999,7 @@ DESKTOP)
   if [ -n "$PID1" ] || [ -n "$PID2" ] || [ -n "$PID3" ]
   then
     echo "Переход в режим рабочего стола"
-    notify-send "Переход в режим рабочего стола"
+    notify-send -t 10000 "Переход в режим рабочего стола"
     pkill unclutter
     pkill feh
     pkill conky
