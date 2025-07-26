@@ -403,6 +403,7 @@ then
   pkill -f feh
   #$BIN_DIR/$WALLPAPER_SCRIPT "$DEMO_DIR"
   $BIN_DIR/$MAIN_SCRIPT
+  rm -f "$FRAME_CONFIG_FILE.md5"
 fi
 
 #ToDo: Вынести все настроечные переменные в общий файл
