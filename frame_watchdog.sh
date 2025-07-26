@@ -231,6 +231,7 @@ do
     if sudo mount "$name" $USB_DIR -o umask=000,user,utf8
     then
       echo "Флэшка успешно подключена"
+      notify-send "Флэшка подключена"
     fi
     pkill feh
   fi
@@ -318,6 +319,7 @@ then
   while IFS= read -r -d '' file
   do
     echo "Обнаружен файл с данными для подключения к сети WiFi: $file"
+    notify-send "Обнаружен файл с данными для подключения к сети WiFi: $file"
     WIFI_SSID2=""
     WIFI_PASSWORD2=""
     while IFS= read -r line
@@ -341,15 +343,18 @@ then
               if [ "$connected" -gt "0" ]
               then
                 echo "Успешно подключились к сети $WIFI_SSID2"
+                notify-send "Успешно подключились к сети $WIFI_SSID2"
                 WIFI_SSID=$WIFI_SSID2
                 WIFI_PASSWORD=$WIFI_PASSWORD2
               else
                 echo "Не удалось подключиться к сети $WIFI_SSID2"
+                notify-send "Не удалось подключиться к сети $WIFI_SSID2"
                 sudo nmcli con del "$WIFI_SSID2"
               fi
               sudo mv -f "$file" "$file.backup"
             else
               echo "Сеть $WIFI_SSID2 не нашлась в списке подключений"
+              notify-send "Сеть $WIFI_SSID2 не нашлась в списке подключений"
             fi
           else
             echo "Параметры сети в файле $file совпадают с уже известными"
@@ -406,6 +411,7 @@ then
   case "$st" in
     $NET_DOWN)
       echo "Сеть восстановить перезапуском Network Manager не удалось, возможно, потребуется перезагрузка"
+      notify-send "Сеть восстановить перезапуском Network Manager не удалось, возможно, потребуется перезагрузка"
       ;;
     $NET_NOT_CONNECTED)
       echo "Сеть не подключена, пытаемся подключиться"
@@ -416,16 +422,21 @@ then
       if [[ $res == *"property is invalid"* ]] || [[ $res == *"not provided"* ]]
       then
         echo "Неправильный пароль $WIFI_PASSWORD"
+        notify-send "Неправильный пароль к сети $WIFI_SSID"
+        st=$(get_connection_status)
       else
         st=$(get_connection_status)
         echo "Состояние после подключения: $st"
+        notify-send "Состояние после подключения: $st"
       fi
       ;;
     $NET_REMOTE_FAIL)
       echo "Сеть подключена, но доступен только шлюз по-умолчанию. Вероятно, проблема у провайдера"
+      notify-send "Сеть подключена, но доступен только шлюз по-умолчанию. Вероятно, проблема у провайдера"
       ;;
     $NET_OK)
       echo "Сеть подключена, внешние ресурсы доступны"
+      notify-send "Сеть подключена, внешние ресурсы доступны"
       ;;
     *)
       echo "Неизвестный статус сети: $st"
