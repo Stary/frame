@@ -409,6 +409,17 @@ then
     st=$(get_connection_status)
   fi
 
+  for i in {1..5}; do
+    if [ "$st" -ne "$NET_OK" ]; then
+      echo "$i. Текущий статус подключения: $st. Пауза 10 секунд перед повтором проверки"
+      sleep 10
+      st=$(get_connection_status)
+    else
+      echo "$i. Подключение активно"
+      break
+    fi
+  done
+
   case "$st" in
     $NET_DOWN)
       echo "Сеть восстановить перезапуском Network Manager не удалось, возможно, потребуется перезагрузка"
