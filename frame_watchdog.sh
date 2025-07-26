@@ -550,8 +550,10 @@ then
   if [ "$c1" != "$c2" ]
   then
     config_changed=1
+    echo "config md5 changed: $c1 != $c2"
   fi
 else
+  echo "config md5 not found"
   config_changed=1
 fi
 
