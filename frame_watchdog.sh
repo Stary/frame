@@ -375,6 +375,7 @@ fi
 if [ "X$WIFI_SSID" != "X" ] && [ "X$WIFI_PASSWORD" != "X" ]
 then
   st=$(get_connection_status)
+  echo "Текущий статус подключения: $st"
   if [ "$st" -eq "$NET_DOWN" ]
   then
 
