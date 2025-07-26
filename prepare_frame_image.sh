@@ -65,13 +65,14 @@ fi
 
 mount "$PARTITION_DEVICE" "$MOUNT_POINT"
 
-if [ -s "$MOUNT_POINT"/home/orangepi/frame.cfg ]; then
-  sed -i "s/UPDATE=no/UPDATE=yes/" "$MOUNT_POINT"/home/orangepi/frame.cfg
-  echo "Update flag set in $MOUNT_POINT/home/orangepi/frame.cfg"
-else
-  echo "Error: $MOUNT_POINT/home/orangepi/frame.cfg not found. Aborting." >&2
-  exit 1
-fi
+# No need to update frame.cfg as user.dat is being removed that makes watchdog to run update
+#if [ -s "$MOUNT_POINT"/home/orangepi/frame.cfg ]; then
+#  sed -i "s/UPDATE=no/UPDATE=yes/" "$MOUNT_POINT"/home/orangepi/frame.cfg
+#  echo "Update flag set in $MOUNT_POINT/home/orangepi/frame.cfg"
+#else
+#  echo "Error: $MOUNT_POINT/home/orangepi/frame.cfg not found. Aborting." >&2
+#  exit 1
+#fi
 
 grep -v -i -E -e "(wifi|password)" "$MOUNT_POINT"/home/orangepi/frame.cfg > "$MOUNT_POINT"/home/orangepi/frame.cfg.new
 mv "$MOUNT_POINT"/home/orangepi/frame.cfg.new "$MOUNT_POINT"/home/orangepi/frame.cfg
@@ -84,7 +85,8 @@ rm -fv "$MOUNT_POINT"/etc/systemd/system/resizefs.service
 rm -fv "$MOUNT_POINT"/usr/local/bin/resize_root.sh
 rm -fv "$MOUNT_POINT"/root/.bash_history
 rm -fv "$MOUNT_POINT"/home/orangepi/.bash_history
-rm -ff "$MOUNT_POINT"/media/photo/frame.cfg
+rm -fv "$MOUNT_POINT"/media/photo/frame.cfg
+rm -rfv "$MOUNT_POINT"/media/photo
 find "$MOUNT_POINT"/etc/netplan -maxdepth 1 -type f -name '*.yaml' ! -name 'orangepi-default.yaml' -exec rm -v {} +
 # Broader cleanup
 rm -rfv "$MOUNT_POINT"/tmp/* "$MOUNT_POINT"/var/tmp/*
