@@ -101,7 +101,7 @@ LOG_FILE="frame.log"
 
 sudo apt-get update -y
 sudo apt-get install -y zip
-sudo apt autoremove -y
+sudo apt-get autoremove -y
 
 pushd $SRC_DIR
 git_status=$(git status)

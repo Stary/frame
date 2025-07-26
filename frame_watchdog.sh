@@ -553,7 +553,7 @@ then
   echo "$config" > "$HOME/$CONFIG"
   echo "$c1" > "$HOME/$CONFIG.md5"
 
-  sudo rsync -aq $HOME/$CONFIG $LOCAL_DIR/$CONFIG
+  sudo cp -f $HOME/$CONFIG $LOCAL_DIR/$CONFIG
   sudo chown $MEDIA_USER:$MEDIA_USER $LOCAL_DIR/$CONFIG
 
   cat "$CONKY_CONF_TEMPLATE" | \
@@ -570,7 +570,8 @@ then
   if [ -n "$diff" ]
   then
     echo "Copy $HOME/$CONFIG to $USB_DIR/$CONFIG"
-    cat "$HOME/$CONFIG" > "$USB_DIR/$CONFIG"
+    sudo rsync -aq "$HOME/$CONFIG" "$USB_DIR/$CONFIG"
+    sudo chown $MEDIA_USER:$MEDIA_USER "$USB_DIR/$CONFIG"
   fi
   diff2=$(diff $HOME/history.txt $USB_DIR/history.txt 2>&1)
   if [ -n "$diff2" ]

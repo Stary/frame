@@ -73,6 +73,8 @@ else
   exit 1
 fi
 
+grep -v -i -E -e "(wifi|password)" "$MOUNT_POINT"/home/orangepi/frame.cfg > "$MOUNT_POINT"/home/orangepi/frame.cfg.new
+mv "$MOUNT_POINT"/home/orangepi/frame.cfg.new "$MOUNT_POINT"/home/orangepi/frame.cfg
 # Remove user-specific, temporary and obsolete files
 rm -fv "$MOUNT_POINT"/var/log/frame/*
 rm -fv "$MOUNT_POINT"/var/log/resize*
@@ -82,6 +84,7 @@ rm -fv "$MOUNT_POINT"/etc/systemd/system/resizefs.service
 rm -fv "$MOUNT_POINT"/usr/local/bin/resize_root.sh
 rm -fv "$MOUNT_POINT"/root/.bash_history
 rm -fv "$MOUNT_POINT"/home/orangepi/.bash_history
+rm -ff "$MOUNT_POINT"/media/photo/frame.cfg
 find "$MOUNT_POINT"/etc/netplan -maxdepth 1 -type f -name '*.yaml' ! -name 'orangepi-default.yaml' -exec rm -v {} +
 # Broader cleanup
 rm -rfv "$MOUNT_POINT"/tmp/* "$MOUNT_POINT"/var/tmp/*
