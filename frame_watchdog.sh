@@ -1,5 +1,8 @@
 #!/bin/bash
 
+SLIDESHOW_DISPLAY=:0
+export DISPLAY=$SLIDESHOW_DISPLAY
+
 #Проверим, чтобы не был запущен другой экземпляр скрипта
 if pidof -o %PPID -x -- "$0" >/dev/null; then
   printf >&2 '%s\n' "ERROR: Скрипт $0 уже активен"
@@ -8,10 +11,15 @@ if pidof -o %PPID -x -- "$0" >/dev/null; then
   if [ -z "$FEH_PID" ] && [ -z "$CONKY_PID" ]
   then
     PING_PID=$(pgrep ping)
+    FIND_PID=$(pgrep find)
     if [ -n "$PING_PID" ]
     then
       echo "Активен ping"
       notify-send -t 10000 "Выполняется настройка сети, немного терпения..."
+    elif [ -n "$FIND_PID" ]
+    then
+      echo "Активен find"
+      notify-send -t 10000 "Выполняется индексация фотографий, немного терпения..."
     fi
   else
     echo "feh $FEH_PID или conky $CONKY_PID запущены"
@@ -29,7 +37,6 @@ RANDOM_ORDER=no
 DEFAULT_RECENT_MINUTES_FIRST=3000
 RECENT_MINUTES_FIRST=$DEFAULT_RECENT_MINUTES_FIRST
 CONFIG=frame.cfg
-SLIDESHOW_DISPLAY=:0
 FONT_DIR=/usr/share/fonts/truetype/freefont/
 FONT=FreeMono/24
 GEO_MAX_LEN=60
@@ -77,8 +84,6 @@ WIFI_DEV='wlan0'
 WIFI_SSID=''
 WIFI_PASSWORD=''
 
-export DISPLAY=$SLIDESHOW_DISPLAY
-
 function unclutter_on {
   unclutter_pid=$(pgrep unclutter)
   if [ -z "$unclutter_pid" ]; then
@@ -93,7 +98,8 @@ function set_panel {
 
   if [ "X$1" == "Xoff" ] && [ "$opacity" -eq "100" ]
   then
-    echo "Панель делаем невидимой"
+    echo "Панель делаю невидимой"
+    notify-send -t 10000 "Панель делаю невидимой"
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 2
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/leave-opacity -s 0
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/enter-opacity -s 0
@@ -103,7 +109,8 @@ function set_panel {
     xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-removable -s false
   elif [ "X$1" != "Xoff" ] && [ "$opacity" -ne "100" ]
   then
-    echo "Панель делаем видимой"
+    echo "Панель делаю видимой"
+    notify-send -t 10000 "Панель делаю видимой"
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/autohide-behavior -s 0
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/leave-opacity -s 100
     xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/enter-opacity -s 100
@@ -245,7 +252,7 @@ do
     if sudo mount "$name" $USB_DIR -o umask=000,user,utf8
     then
       echo "Флэшка успешно подключена"
-      notify-send -t 10000 "Флэшка подключена"
+      notify-send -t 10000 "Флэшка успешно подключена"
     fi
     pkill feh
   fi

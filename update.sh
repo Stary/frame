@@ -404,10 +404,10 @@ changed_files=$(find "$BIN_DIR" -mtime -1 -type f | grep -v .git | grep -v pycac
 if [ "$changed_files" -ne 0 ] || [ "X$OPTION" == "Xforce" ]
 then
   echo "Изменено файлов: $changed_files, перезапустим сервис"
-  notify-send -t 10000 "Изменено файлов: $changed_files, перезапустим сервис"
-  pkill conky
-  pkill unclutter
-  pkill -f feh
+  notify-send -t 10000 "Изменено файлов: $changed_files, запланирую перезапуск сервиса"
+  #pkill conky
+  #pkill unclutter
+  #pkill -f feh
   #$BIN_DIR/$WALLPAPER_SCRIPT "$DEMO_DIR"
   $BIN_DIR/$MAIN_SCRIPT
   rm -f "$FRAME_CONFIG_FILE.md5"
