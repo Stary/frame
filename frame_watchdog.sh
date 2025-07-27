@@ -2,7 +2,7 @@
 
 SLIDESHOW_DISPLAY=:0
 export DISPLAY=$SLIDESHOW_DISPLAY
-alias nwait='sleep 10'
+export NETWORK_RETRY_DELAY=10
 
 #Проверим, чтобы не был запущен другой экземпляр скрипта
 if pidof -o %PPID -x -- "$0" >/dev/null; then
@@ -12,11 +12,11 @@ if pidof -o %PPID -x -- "$0" >/dev/null; then
   if [ -z "$FEH_PID" ] && [ -z "$CONKY_PID" ]
   then
     PING_PID=$(pgrep ping)
-    NWAIT_PID=$(pgrep nwait)
+    NWAIT_PID=$(ps -ef | grep -v grep | grep "sleep $NETWORK_RETRY_DELAY")
     FIND_PID=$(pgrep find)
     if [ -n "$PING_PID" ] || [ -n "$NWAIT_PID" ]
     then
-      echo "Активен ping или nwait"
+      echo "Активен ping или sleep"
       notify-send -t 10000 "Выполняется настройка сети, немного терпения..."
     elif [ -n "$FIND_PID" ]
     then
@@ -443,7 +443,7 @@ then
   for i in {1..5}; do
     if [ "$st" -ne "$NET_OK" ]; then
       echo "$i. Текущий статус подключения: $st. Пауза 10 секунд перед повтором проверки"
-      nwait
+      sleep $NETWORK_RETRY_DELAY
       st=$(get_connection_status)
     else
       echo "$i. Подключение активно"
