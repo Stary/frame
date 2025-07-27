@@ -114,9 +114,10 @@ VERSION=$($SRC_DIR/$VERSION_SCRIPT)
 echo "Version: $VERSION"
 popd
 
-cat ~/.bashrc 2>/dev/null| grep -v update.sh > ~/.bashrc.tmp
+cat ~/.bashrc 2>/dev/null| grep -v update.sh | grep -v $LOG_FILE > ~/.bashrc.tmp
 mv -f ~/.bashrc.tmp ~/.bashrc
 echo "alias u='cd ~/frame && git pull && ./update.sh 2>/dev/null | tee -a $LOG_DIR/update.log'" >> ~/.bashrc
+echo "alias l='tail -f $LOG_DIR/$LOG_FILE'" >> ~/.bashrc
 source ~/.bashrc
 
 #Отключение IPv6

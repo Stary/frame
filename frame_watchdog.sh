@@ -866,12 +866,12 @@ FRAME)
       if [ -d "$d" ]
       then
         TMP_ALL_LIST="/tmp/all.lst"
-        notify-send -t 10000 "Индексирую фотографии в каталоге $d"
         find "$d" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" | sort  > $TMP_ALL_LIST
         if [ -s "$TMP_ALL_LIST" ]
         then
           IMAGES_DIR=$d
           echo "Каталог с фото: $IMAGES_DIR"
+          notify-send -t 10000 "Индексирую фотографии в каталоге $IMAGES_DIR"
           TMP_IMAGES_DIR="/tmp/frame/$IMAGES_DIR"
           mkdir -p "$TMP_IMAGES_DIR"
           ALL_LIST="$TMP_IMAGES_DIR/all.lst"
