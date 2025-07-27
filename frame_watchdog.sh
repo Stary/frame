@@ -122,6 +122,14 @@ function set_panel {
     xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-removable -s true
   fi
   xfconf-query --create -t uint -c xfce4-panel -p /panels/panel-1/background-style -s 2
+  #Show seconds
+  for plugin in $(xfconf-query -c xfce4-panel -p /plugins -l | grep -E -e '^/plugins/plugin-[0-9]+$')
+  do
+    plugin_name=$(xfconf-query -c xfce4-panel -p $plugin)
+    if [ "$plugin_name" == "clock" ]; then
+      xfconf-query --create -t string -c xfce4-panel -p $plugin/digital-time-format -s '%T'
+    fi
+  done
 }
 
 function set_power_mode {

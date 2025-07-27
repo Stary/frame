@@ -105,6 +105,8 @@ sudo apt-get update -y
 sudo apt-get install -y zip
 sudo apt-get autoremove -y
 
+sudo setcap cap_net_raw+p $(which ping)
+
 pushd $SRC_DIR
 git_status=$(git status)
 echo "status: $git_status"
@@ -117,7 +119,7 @@ popd
 cat ~/.bashrc 2>/dev/null| grep -v update.sh | grep -v $LOG_FILE > ~/.bashrc.tmp
 mv -f ~/.bashrc.tmp ~/.bashrc
 echo "alias u='cd ~/frame && git pull && ./update.sh 2>/dev/null | tee -a $LOG_DIR/update.log'" >> ~/.bashrc
-echo "alias l='tail -f $LOG_DIR/$LOG_FILE'" >> ~/.bashrc
+echo "alias fl='tail -f $LOG_DIR/$LOG_FILE'" >> ~/.bashrc
 source ~/.bashrc
 
 #Отключение IPv6
