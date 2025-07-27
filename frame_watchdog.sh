@@ -2,6 +2,7 @@
 
 SLIDESHOW_DISPLAY=:0
 export DISPLAY=$SLIDESHOW_DISPLAY
+alias nwait='sleep 10'
 
 #Проверим, чтобы не был запущен другой экземпляр скрипта
 if pidof -o %PPID -x -- "$0" >/dev/null; then
@@ -11,10 +12,11 @@ if pidof -o %PPID -x -- "$0" >/dev/null; then
   if [ -z "$FEH_PID" ] && [ -z "$CONKY_PID" ]
   then
     PING_PID=$(pgrep ping)
+    NWAIT_PID=$(pgrep nwait)
     FIND_PID=$(pgrep find)
-    if [ -n "$PING_PID" ]
+    if [ -n "$PING_PID" ] || [ -n "$NWAIT_PID" ]
     then
-      echo "Активен ping"
+      echo "Активен ping или nwait"
       notify-send -t 10000 "Выполняется настройка сети, немного терпения..."
     elif [ -n "$FIND_PID" ]
     then
@@ -433,7 +435,7 @@ then
   for i in {1..5}; do
     if [ "$st" -ne "$NET_OK" ]; then
       echo "$i. Текущий статус подключения: $st. Пауза 10 секунд перед повтором проверки"
-      sleep 10
+      nwait
       st=$(get_connection_status)
     else
       echo "$i. Подключение активно"
@@ -991,6 +993,7 @@ FRAME)
       then
         echo "Устанавливаю таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
         notify-send -t 10000 "Устанавливаю таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
+        pkill sleep
         nohup sh -c "sleep $sleep_to_restart; pkill -f feh; notify-send -t 10000 'Перезапускаю слайдшоу с новой даты'" >/dev/null 2>&1 &
       fi
       feh -V -r -Z -F -Y -D $DELAY -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAY_LIST >> /var/log/frame/feh.log 2>&1 &
