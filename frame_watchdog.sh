@@ -3,6 +3,19 @@
 #Проверим, чтобы не был запущен другой экземпляр скрипта
 if pidof -o %PPID -x -- "$0" >/dev/null; then
   printf >&2 '%s\n' "ERROR: Скрипт $0 уже активен"
+  FEH_PID=$(pgrep feh)
+  CONKY_PID=$(pgrep conky)
+  if [ -z "$FEH_PID" ] && [ -z "$CONKY_PID" ]
+  then
+    PING_PID=$(pgrep ping)
+    if [ -n "$PING_PID" ]
+    then
+      echo "Активен ping"
+      notify-send -t 10000 "Выполняется настройка сети, немного терпения..."
+    fi
+  else
+    echo "feh $FEH_PID или conky $CONKY_PID запущены"
+  fi
   exit 1
 else
   date
@@ -571,6 +584,7 @@ fi
 if [ "$config_changed" -gt "0" ]
 then
   echo "Обнаружено изменение конфига"
+  notify-send -t 10000 "Обнаружено изменение конфига"
   pkill -f feh
   pkill conky
   sleep 3
@@ -608,12 +622,15 @@ fi
 
 if [ "X$REBOOT" == "Xyes" ]
 then
-  echo "В конфиге выставлен флаг перезагрузки, выполняем"
+  echo "В конфиге выставлен флаг перезагрузки, выполняю"
+  notify-send "В конфиге выставлен флаг перезагрузки, выполняю"
+  sleep 3
   sudo reboot
 fi
 
 if [ ! -f "$MEDIA_PASSWD_FILE" ]; then
-  echo "Не обнаружен файл с паролем пользователя media, это признак необходимости инициализации. "
+  echo "Не обнаружен файл с паролем пользователя media, это признак необходимости инициализации."
+  notify-send -t 10000 "Не найдены настройки пользователя media, это признак необходимости инициализации."
   UPDATE='yes'
 fi
 
@@ -689,7 +706,7 @@ NTP=$(chronyc tracking | grep -i status | grep -i normal | wc -l)
 
 if [ "$NTP" -eq "0" ]
 then
-  echo "Синхронизация с NTP не работает, включаем принудительный дневной режим"
+  echo "Синхронизация с NTP не работает, включаю принудительный дневной режим"
   target_mode=FRAME
 else
 
@@ -704,14 +721,15 @@ else
       pkill sshpass
       sleep 3
     fi
-    echo "Запускаем удалённую поддержку"
-    notify-send -t 10000 "Запускаем удалённую поддержку"
+    echo "Запускаю удалённую поддержку"
+    notify-send -t 10000 "Запускаю удалённую поддержку"
     nohup sshpass -p "$REMOTE_ASSISTANCE_CODE" ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -N -R 0:localhost:22 -p $SSH_PORT $SSH_USER@$SSH_HOST > /dev/null 2>&1 &
   fi
 
   if [ "X$UPDATE" == "Xyes" ]
   then
-    echo "Запрошено автоматическое обновление"
+    echo "Инициировано обновление"
+    notify-send -t 10000 "Инициировано обновление"
     st=$(get_connection_status)
     if [ "$st" -eq "$NET_OK" ]
     then
@@ -741,16 +759,16 @@ else
     target_crontab_line="3,13,23,33,43,53 * * * * python3 $BIN_DIR/$YANDEX_DISK_SYNC_SCRIPT $HOME/$CONFIG $YANDEX_DISK $ARCHIVE_DIR >> $LOG_DIR/cron.log 2>&1"
     if [ "X$target_crontab_line" != "X$cur_crontab_line" ]
     then
-      echo "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
-      notify-send -t 10000 "Включаем синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
+      echo "Включаю синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
+      notify-send -t 10000 "Включаю синхронизацию с Яндекс Диском в папку $YANDEX_DISK"
       (crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT; echo "$target_crontab_line") | crontab -
     fi
   else
     if [ -n "$cur_crontab_line" ]
     then
       target_crontab_line=""
-      echo "Выключаем синхронизацию с Яндекс Диском"
-      notify-send -t 10000 "Выключаем синхронизацию с Яндекс Диском"
+      echo "Выключаю синхронизацию с Яндекс Диском"
+      notify-send -t 10000 "Выключаю синхронизацию с Яндекс Диском"
       crontab -l 2>/dev/null | grep -v $YANDEX_DISK_SYNC_SCRIPT | crontab -
     fi
   fi
@@ -839,7 +857,7 @@ FRAME)
       if [ -d "$d" ]
       then
         TMP_ALL_LIST="/tmp/all.lst"
-        notify-send -t 10000 "Индексирование фотографий в каталоге $d"
+        notify-send -t 10000 "Индексирую фотографии в каталоге $d"
         find "$d" -type f -size +$MIN_IMAGE_SIZE -regextype egrep -iregex ".*\.$IMAGE_EXT_RE" | sort  > $TMP_ALL_LIST
         if [ -s "$TMP_ALL_LIST" ]
         then
@@ -865,14 +883,15 @@ FRAME)
           then
             if [ "X$RANDOM_ORDER" == "Xyes" ]
             then
-              echo "Добавляем в плейлист новые фотографии в случайном порядке"
+              echo "Добавляю в плейлист новые фотографии в случайном порядке"
+              notify-send -t 10000 "Добавляю в плейлист новые фотографии в случайном порядке"
               cat "$RECENT_LIST" | shuf >> "$PLAY_LIST"
             else
               lines=$(wc -l "$RECENT_LIST" | cut -d ' ' -f 1)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
               tail=$(echo "$lines*2 - $offset + 1" | bc)
-              echo "Добавляем в плейлист $lines новых фотографий, начиная c $offset"
-              notify-send -t 10000 "Добавляем в плейлист $lines новых фотографий, начиная c $offset"
+              echo "Добавляю в плейлист $lines новых фотографий, начиная c $offset"
+              notify-send -t 10000 "Добавляю в плейлист $lines новых фотографий, начиная c $offset"
               cat "$RECENT_LIST" "$RECENT_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
           else
@@ -882,15 +901,15 @@ FRAME)
           then
             if [ "X$RANDOM_ORDER" == "Xyes" ]
             then
-              echo "Добавляем в плейлист старые фотографии в случайном порядке"
-              notify-send -t 10000 "Добавляем в плейлист старые фотографии в случайном порядке"
+              echo "Добавляю в плейлист старые фотографии в случайном порядке"
+              notify-send -t 10000 "Добавляю в плейлист старые фотографии в случайном порядке"
               cat "$OLDER_LIST" | shuf >> "$PLAY_LIST"
             else
               lines=$(wc -l "$OLDER_LIST" | cut -d ' ' -f 1)
               offset=$(echo "1 + $RANDOM % $lines" | bc)
               tail=$(echo "$lines*2 - $offset + 1" | bc)
-              echo "Добавляем в плейлист $lines старых фотографий, начиная c $offset"
-              notify-send -t 10000 "Добавляем в плейлист $lines старых фотографий, начиная c $offset"
+              echo "Добавляю в плейлист $lines старых фотографий, начиная c $offset"
+              notify-send -t 10000 "Добавляю в плейлист $lines старых фотографий, начиная c $offset"
               cat "$OLDER_LIST" "$OLDER_LIST" | tail -n $tail | head -n $lines >> "$PLAY_LIST"
             fi
           else
@@ -963,9 +982,9 @@ FRAME)
       sleep_to_restart=$(echo "$RESTART_SLIDESHOW_AFTER*60-10" | bc)
       if [ "$sleep_to_restart" -gt 0 ]
       then
-        echo "Устанавливаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
-        notify-send -t 10000 "Устанавливаем таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
-        nohup sh -c "sleep $sleep_to_restart; pkill -f feh" >/dev/null 2>&1 &
+        echo "Устанавливаю таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
+        notify-send -t 10000 "Устанавливаю таймер на $sleep_to_restart секунд до перезапуска слайдшоу"
+        nohup sh -c "sleep $sleep_to_restart; pkill -f feh; notify-send -t 10000 'Перезапускаю слайдшоу с новой даты'" >/dev/null 2>&1 &
       fi
       feh -V -r -Z -F -Y -D $DELAY -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAY_LIST >> /var/log/frame/feh.log 2>&1 &
 #      feh -V -r -Z -F -Y -D $DELAY "${ORDER_OPTIONS[@]}" -C $FONT_DIR -e $FONT --info "~/bin/get_info.sh %F $GEO_MAX_LEN" --draw-tinted -f $PLAY_LIST >> /var/log/frame/feh.log 2>&1 &
