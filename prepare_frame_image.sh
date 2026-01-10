@@ -10,7 +10,7 @@ DISK_DEVICE="${1:-/dev/sdc}"
 PARTITION_NUM="${2:-1}"
 MOUNT_POINT="${3:-/mnt/frame}"
 USER_HOME="${4:-/home/orangepi}"
-IMAGE_SIZE="${5:-8G}"
+IMAGE_SIZE="${5:-}"
 case "$DISK_DEVICE" in
     /dev/mmcblk*|/dev/nvme*)
         PARTITION_DEVICE="${DISK_DEVICE}p${PARTITION_NUM}"
@@ -29,7 +29,7 @@ Preparing to create image with the following settings:
   Partition device: $PARTITION_DEVICE
   Mount point:      $MOUNT_POINT
   User home:        $USER_HOME
-  Image size:       $IMAGE_SIZE
+  Image size:       ${IMAGE_SIZE:-"(skipped)"}
   Output image:     frame.$TS.img.gz
 EOF
 read -p "Are you sure you want to proceed? This may overwrite or erase data. (yes/NO): " CONFIRM
@@ -102,21 +102,26 @@ sudo sed -i '/[[:space:]]\/[[:space:]]/ s/commit=[0-9]\+/commit=1/' "$MOUNT_POIN
 
 umount "$MOUNT_POINT"
 
-# Filesystem check and shrink to specified image size
-if ! e2fsck -f "$PARTITION_DEVICE"; then
-    echo "e2fsck failed after cleanup. Aborting." >&2
-    exit 1
-fi
-if ! resize2fs "$PARTITION_DEVICE" "$IMAGE_SIZE"; then
-    echo "resize2fs to $IMAGE_SIZE failed. Aborting." >&2
-    exit 1
-fi
+if [ -n "$IMAGE_SIZE" ]; then
+    # Filesystem check and shrink to specified image size
+    if ! e2fsck -f "$PARTITION_DEVICE"; then
+        echo "e2fsck failed after cleanup. Aborting." >&2
+        exit 1
+    fi
 
-parted "$DISK_DEVICE" resizepart "$PARTITION_NUM" "$IMAGE_SIZE"
-parted "$DISK_DEVICE" print
+    if ! resize2fs "$PARTITION_DEVICE" "$IMAGE_SIZE"; then
+        echo "resize2fs to $IMAGE_SIZE failed. Aborting." >&2
+        exit 1
+    fi
 
-resize2fs "$PARTITION_DEVICE"
-e2fsck -f "$PARTITION_DEVICE"
+    parted "$DISK_DEVICE" resizepart "$PARTITION_NUM" "$IMAGE_SIZE"
+    parted "$DISK_DEVICE" print
+
+    resize2fs "$PARTITION_DEVICE"
+    e2fsck -f "$PARTITION_DEVICE"
+else
+    echo "IMAGE_SIZE is not set. Skipping partition resize and filesystem growth."
+fi
 
 # Calculate sectors to dump (end of partition + buffer)
 END_SECTOR=$(parted "$DISK_DEVICE" unit s print | grep "^ *$PARTITION_NUM" | awk '{print $3}' | sed 's/s$//')
