@@ -21,6 +21,25 @@ case "$DISK_DEVICE" in
 esac
 TS=$(date +%Y%m%d)
 
+size_to_bytes() {
+  local size="$1"
+  case "$size" in
+    *iB|*i)
+      numfmt --from=iec --to=none "$size"
+      ;;
+    *[KMGTP]B|*[KMGTP])
+      numfmt --from=si --to=none "$size"
+      ;;
+    *)
+      numfmt --from=none --to=none "$size"
+      ;;
+  esac
+}
+
+partition_start_sector() {
+  parted -m "$DISK_DEVICE" unit s print | awk -F: -v part="$PARTITION_NUM" '$1 == part {gsub(/s$/, "", $2); print $2}'
+}
+
 # Confirm settings with user
 cat <<EOF
 Preparing to create image with the following settings:
@@ -53,14 +72,16 @@ fi
 mkdir -p "$MOUNT_POINT"
 umount "$MOUNT_POINT" 2>/dev/null || :
 
-# Filesystem check and shrink to minimum
-if ! e2fsck -f "$PARTITION_DEVICE"; then
-    echo "e2fsck failed. Aborting." >&2
-    exit 1
-fi
-if ! resize2fs -M "$PARTITION_DEVICE"; then
-    echo "resize2fs -M failed. Aborting." >&2
-    exit 1
+if [ -n "$IMAGE_SIZE" ]; then
+  # Filesystem check and shrink to minimum
+  if ! e2fsck -f "$PARTITION_DEVICE"; then
+      echo "e2fsck failed. Aborting." >&2
+      exit 1
+  fi
+  if ! resize2fs -M "$PARTITION_DEVICE"; then
+      echo "resize2fs -M failed. Aborting." >&2
+      exit 1
+  fi
 fi
 
 mount "$PARTITION_DEVICE" "$MOUNT_POINT"
@@ -103,20 +124,41 @@ sudo sed -i '/[[:space:]]\/[[:space:]]/ s/commit=[0-9]\+/commit=1/' "$MOUNT_POIN
 umount "$MOUNT_POINT"
 
 if [ -n "$IMAGE_SIZE" ]; then
-    # Filesystem check and shrink to specified image size
+    # Filesystem check and resize to requested image size
     if ! e2fsck -f "$PARTITION_DEVICE"; then
         echo "e2fsck failed after cleanup. Aborting." >&2
         exit 1
     fi
 
-    if ! resize2fs "$PARTITION_DEVICE" "$IMAGE_SIZE"; then
-        echo "resize2fs to $IMAGE_SIZE failed. Aborting." >&2
+    TARGET_BYTES=$(size_to_bytes "$IMAGE_SIZE")
+    if [ -z "$TARGET_BYTES" ] || [ "$TARGET_BYTES" -le 0 ]; then
+        echo "Invalid IMAGE_SIZE: $IMAGE_SIZE" >&2
         exit 1
     fi
 
-    parted "$DISK_DEVICE" resizepart "$PARTITION_NUM" "$IMAGE_SIZE"
+    SECTOR_SIZE=$(blockdev --getss "$DISK_DEVICE")
+    if [ -z "$SECTOR_SIZE" ] || [ "$SECTOR_SIZE" -le 0 ]; then
+        echo "Error: Could not determine sector size for $DISK_DEVICE" >&2
+        exit 1
+    fi
+
+    START_SECTOR=$(partition_start_sector)
+    if [ -z "$START_SECTOR" ]; then
+        echo "Error: Could not determine start sector of partition $PARTITION_NUM" >&2
+        exit 1
+    fi
+
+    TARGET_SECTORS=$((TARGET_BYTES / SECTOR_SIZE))
+    END_SECTOR=$((TARGET_SECTORS - 1))
+    if [ "$END_SECTOR" -le "$START_SECTOR" ]; then
+        echo "Error: IMAGE_SIZE too small for partition $PARTITION_NUM" >&2
+        exit 1
+    fi
+
+    parted -s "$DISK_DEVICE" unit s resizepart "$PARTITION_NUM" "${END_SECTOR}s"
     parted "$DISK_DEVICE" print
 
+    partprobe "$DISK_DEVICE" 2>/dev/null || blockdev --rereadpt "$DISK_DEVICE"
     resize2fs "$PARTITION_DEVICE"
     e2fsck -f "$PARTITION_DEVICE"
 else
