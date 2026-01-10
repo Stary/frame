@@ -158,7 +158,7 @@ if [ -n "$IMAGE_SIZE" ]; then
         exit 1
     fi
 
-    parted -s "$DISK_DEVICE" unit s resizepart "$PARTITION_NUM" "${END_SECTOR}s"
+    parted -s "$DISK_DEVICE" unit s resizepart "$PARTITION_NUM" "${END_SECTOR}s" yes
     parted "$DISK_DEVICE" print
 
     partprobe "$DISK_DEVICE" 2>/dev/null || blockdev --rereadpt "$DISK_DEVICE"
