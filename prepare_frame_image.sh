@@ -2,15 +2,18 @@
 
 set -e
 
-# Usage: prepare_frame_image.sh <DISK_DEVICE> <PARTITION_NUM> <MOUNT_POINT> <USER_HOME> <IMAGE_SIZE>
+# Usage: prepare_frame_image.sh <DISK_DEVICE> <PARTITION_NUM> <IMAGE_SIZE> <MOUNT_POINT> <USER_HOME>
 # Example: ./prepare_frame_image.sh /dev/sdc 1 /mnt/frame /home/orangepi 8G
 
 # Default values
 DISK_DEVICE="${1:-/dev/sdc}"
 PARTITION_NUM="${2:-1}"
-MOUNT_POINT="${3:-/mnt/frame}"
-USER_HOME="${4:-/home/orangepi}"
-IMAGE_SIZE="${5:-}"
+IMAGE_SIZE="${3:-8G}"
+if [[ -n "$IMAGE_SIZE" && ! "$IMAGE_SIZE" =~ ^[0-9] ]]; then
+  IMAGE_SIZE=""
+fi
+MOUNT_POINT="${4:-/mnt/frame}"
+USER_HOME="${5:-/home/orangepi}"
 case "$DISK_DEVICE" in
     /dev/mmcblk*|/dev/nvme*)
         PARTITION_DEVICE="${DISK_DEVICE}p${PARTITION_NUM}"
