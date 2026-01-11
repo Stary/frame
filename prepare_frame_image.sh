@@ -23,6 +23,7 @@ case "$DISK_DEVICE" in
         ;;
 esac
 TS=$(date +%Y%m%d)
+OUTPUT_IMAGE="frame.$TS.img.gz"
 
 size_to_bytes() {
   local size="$1"
@@ -43,6 +44,23 @@ partition_start_sector() {
   parted -m "$DISK_DEVICE" unit s print | awk -F: -v part="$PARTITION_NUM" '$1 == part {gsub(/s$/, "", $2); print $2}'
 }
 
+partition_end_sector() {
+  parted -m "$DISK_DEVICE" unit s print | awk -F: -v part="$PARTITION_NUM" '$1 == part {gsub(/s$/, "", $3); print $3}'
+}
+
+check_commands() {
+  local missing=0
+  for cmd in "$@"; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      echo "Error: Required command '$cmd' not found." >&2
+      missing=1
+    fi
+  done
+  if [ "$missing" -ne 0 ]; then
+    exit 1
+  fi
+}
+
 # Confirm settings with user
 cat <<EOF
 Preparing to create image with the following settings:
@@ -52,7 +70,7 @@ Preparing to create image with the following settings:
   Mount point:      $MOUNT_POINT
   User home:        $USER_HOME
   Image size:       ${IMAGE_SIZE:-"(skipped)"}
-  Output image:     frame.$TS.img.gz
+  Output image:     $OUTPUT_IMAGE
 EOF
 read -p "Are you sure you want to proceed? This may overwrite or erase data. (yes/NO): " CONFIRM
 if [ "$CONFIRM" != "yes" ]; then
@@ -66,6 +84,13 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# Check for required commands before starting long-running operations
+REQUIRED_CMDS=(
+  awk sed grep find mount umount e2fsck resize2fs numfmt
+  parted blockdev partprobe dd gzip sync rm mv
+)
+check_commands "${REQUIRED_CMDS[@]}"
+
 # Check if partition is mounted elsewhere
 if mount | grep -q "$PARTITION_DEVICE"; then
     echo "Error: $PARTITION_DEVICE is mounted elsewhere. Unmount it first."
@@ -76,6 +101,41 @@ mkdir -p "$MOUNT_POINT"
 umount "$MOUNT_POINT" 2>/dev/null || :
 
 if [ -n "$IMAGE_SIZE" ]; then
+  TARGET_BYTES=$(size_to_bytes "$IMAGE_SIZE")
+  if [ -z "$TARGET_BYTES" ] || [ "$TARGET_BYTES" -le 0 ]; then
+      echo "Invalid IMAGE_SIZE: $IMAGE_SIZE" >&2
+      exit 1
+  fi
+
+  SECTOR_SIZE=$(blockdev --getss "$DISK_DEVICE")
+  if [ -z "$SECTOR_SIZE" ] || [ "$SECTOR_SIZE" -le 0 ]; then
+      echo "Error: Could not determine sector size for $DISK_DEVICE" >&2
+      exit 1
+  fi
+
+  START_SECTOR=$(partition_start_sector)
+  if [ -z "$START_SECTOR" ]; then
+      echo "Error: Could not determine start sector of partition $PARTITION_NUM" >&2
+      exit 1
+  fi
+
+  TARGET_SECTORS=$((TARGET_BYTES / SECTOR_SIZE))
+  END_SECTOR=$((TARGET_SECTORS - 1))
+  if [ "$END_SECTOR" -le "$START_SECTOR" ]; then
+      echo "Error: IMAGE_SIZE too small for partition $PARTITION_NUM" >&2
+      exit 1
+  fi
+
+  CURRENT_END_SECTOR=$(partition_end_sector)
+  if [ -z "$CURRENT_END_SECTOR" ]; then
+      echo "Error: Could not determine current end sector of partition $PARTITION_NUM" >&2
+      exit 1
+  fi
+
+  if [ "$END_SECTOR" -lt "$CURRENT_END_SECTOR" ]; then
+      check_commands sfdisk
+  fi
+
   # Filesystem check and shrink to minimum
   if ! e2fsck -f "$PARTITION_DEVICE"; then
       echo "e2fsck failed. Aborting." >&2
@@ -133,32 +193,16 @@ if [ -n "$IMAGE_SIZE" ]; then
         exit 1
     fi
 
-    TARGET_BYTES=$(size_to_bytes "$IMAGE_SIZE")
-    if [ -z "$TARGET_BYTES" ] || [ "$TARGET_BYTES" -le 0 ]; then
-        echo "Invalid IMAGE_SIZE: $IMAGE_SIZE" >&2
-        exit 1
+    if [ "$END_SECTOR" -lt "$CURRENT_END_SECTOR" ]; then
+        NEW_SIZE_SECTORS=$((END_SECTOR - START_SECTOR + 1))
+        if [ "$NEW_SIZE_SECTORS" -le 0 ]; then
+            echo "Error: Computed partition size is invalid for shrinking." >&2
+            exit 1
+        fi
+        echo ",${NEW_SIZE_SECTORS}" | sfdisk --no-reread -N "$PARTITION_NUM" "$DISK_DEVICE"
+    else
+        parted -s "$DISK_DEVICE" unit s resizepart "$PARTITION_NUM" "${END_SECTOR}s"
     fi
-
-    SECTOR_SIZE=$(blockdev --getss "$DISK_DEVICE")
-    if [ -z "$SECTOR_SIZE" ] || [ "$SECTOR_SIZE" -le 0 ]; then
-        echo "Error: Could not determine sector size for $DISK_DEVICE" >&2
-        exit 1
-    fi
-
-    START_SECTOR=$(partition_start_sector)
-    if [ -z "$START_SECTOR" ]; then
-        echo "Error: Could not determine start sector of partition $PARTITION_NUM" >&2
-        exit 1
-    fi
-
-    TARGET_SECTORS=$((TARGET_BYTES / SECTOR_SIZE))
-    END_SECTOR=$((TARGET_SECTORS - 1))
-    if [ "$END_SECTOR" -le "$START_SECTOR" ]; then
-        echo "Error: IMAGE_SIZE too small for partition $PARTITION_NUM" >&2
-        exit 1
-    fi
-
-    yes | parted -s "$DISK_DEVICE" unit s resizepart "$PARTITION_NUM" "${END_SECTOR}s"
     parted "$DISK_DEVICE" print
 
     partprobe "$DISK_DEVICE" 2>/dev/null || blockdev --rereadpt "$DISK_DEVICE"
@@ -169,7 +213,7 @@ else
 fi
 
 # Calculate sectors to dump (end of partition + buffer)
-END_SECTOR=$(parted "$DISK_DEVICE" unit s print | grep "^ *$PARTITION_NUM" | awk '{print $3}' | sed 's/s$//')
+END_SECTOR=$(partition_end_sector)
 if [ -z "$END_SECTOR" ]; then
   echo "Error: Could not determine end sector of partition $PARTITION_NUM" >&2
   exit 1
@@ -179,10 +223,24 @@ SECTORS_COUNT=$((END_SECTOR + BUFFER_SECTORS))
 echo "Dumping $SECTORS_COUNT sectors from $DISK_DEVICE..."
 
 sync
+# Detect dd status=progress support for this environment
+DD_STATUS_ARG=""
+if dd --help 2>/dev/null | grep -q -E 'progress'; then
+  DD_STATUS_ARG="status=progress"
+else
+  echo "Note: dd does not support status=progress; continuing without progress output."
+fi
 # Create the compressed image
-if ! dd if="$DISK_DEVICE" bs=512 count="$SECTORS_COUNT" status=progress | gzip > "frame.$TS.img.gz"; then
+if ! dd if="$DISK_DEVICE" bs=512 count="$SECTORS_COUNT" $DD_STATUS_ARG | gzip > "$OUTPUT_IMAGE"; then
     echo "Error: dd or gzip failed." >&2
     exit 1
 fi
 
-echo "Image created: frame.$TS.img.gz"
+echo "Image created: $OUTPUT_IMAGE"
+echo "To write to another MicroSD:"
+if [ -n "$DD_STATUS_ARG" ]; then
+  echo "  gzip -dc \"$OUTPUT_IMAGE\" | sudo dd of=/dev/sdX bs=4M conv=fsync $DD_STATUS_ARG"
+else
+  echo "  gzip -dc \"$OUTPUT_IMAGE\" | sudo dd of=/dev/sdX bs=4M conv=fsync"
+fi
+echo "  # replace /dev/sdX with the target disk (not a partition)"
